@@ -1,0 +1,8 @@
+{
+    "Port": 8989,
+    "PacketSendChanLimit": 10,
+    "PacketReceiveChanLimit": 10,
+    "AcceptTimeout": 300000,
+
+    "ReportingIntervalTime":1000
+}
