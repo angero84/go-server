@@ -8,39 +8,31 @@ import (
 	"fmt"
 	"encoding/json"
 	"sync/atomic"
-
 )
-
-type ServerError struct {
-	msg 		string
-}
-
-func (m *ServerError) Error() string {
-	return fmt.Sprintf("%s", m.msg)
-}
 
 type Config struct {
 	Port 					uint16	`json:"Port"`
-	PacketSendChanLimit    	uint32	`json:"PacketSendChanLimit"`
-	PacketReceiveChanLimit 	uint32	`json:"PacketReceiveChanLimit"`
+	PacketChanMaxSend    	uint32	`json:"PacketChanMaxSend"`
+	PacketChanMaxReceive 	uint32	`json:"PacketChanMaxReceive"`
 	AcceptTimeout			uint32	`json:"AcceptTimeout"`
 
 	ReportingIntervalTime	uint32 	`json:"ReportingIntervalTime"`
 }
 
+
+
 type Server struct {
 	config    		*Config         // server configuration
-	callback  		ConnCallback    // message callbacks in connection
+	callback  		ConnEventCallback    // message callbacks in connection
 	protocol  		protocol.Protocol        // customize packet protocol
 	exitChan  		chan struct{}   // notify all goroutines to shutdown
 	waitGroup 		*sync.WaitGroup // wait for all goroutines
 
 	connSeqId		uint64
-	conns 			map[uint64]*Conn
-	connsRWMutex 	sync.RWMutex
+	connManager   	*ConnManager
 }
 
-func NewServer(configBytes []byte, callback ConnCallback, protocol protocol.Protocol) ( srv *Server, err error ) {
+func NewServer(configBytes []byte, callback ConnEventCallback, protocol protocol.Protocol) ( srv *Server, err error ) {
 
 	config := &Config{}
 
@@ -50,15 +42,34 @@ func NewServer(configBytes []byte, callback ConnCallback, protocol protocol.Prot
 	}
 
 	srv = &Server{
-		config:    	config,
-		callback:  	callback,
-		protocol:  	protocol,
-		exitChan:  	make(chan struct{}),
-		waitGroup: 	&sync.WaitGroup{},
-		conns:		make(map[uint64]*Conn),
+		config:    		config,
+		callback:  		callback,
+		protocol:  		protocol,
+		exitChan:  		make(chan struct{}),
+		waitGroup: 		&sync.WaitGroup{},
+		connManager:	NewConnManager(),
 	}
 
 	return
+}
+
+func (m *Server) OnConnected(c *Conn) {
+	addr := c.GetRawConn().RemoteAddr()
+	c.PutExtraData(addr)
+	fmt.Println("OnConnect:", addr)
+}
+
+func (m *Server) OnMessage(c *Conn, p protocol.Packet) {
+	echoPacket := p.(*protocol.EchoPacket)
+	fmt.Printf("OnMessage:[%v] [%v]\n", echoPacket.GetLength(), string(echoPacket.GetBody()))
+	c.AsyncWritePacket(protocol.NewEchoPacket(echoPacket.Serialize(), true), time.Second)
+
+}
+
+func (m *Server) OnClosed(c *Conn) {
+	fmt.Println("OnClose:", c.GetExtraData())
+	m.connManager.removeConn(c)
+
 }
 
 func (m *Server) Start() ( err error ) {
@@ -84,6 +95,12 @@ func (m *Server) Start() ( err error ) {
 	m.asyncDo(m.reporting)
 
 	acceptTimeout := time.Duration(m.config.AcceptTimeout)*time.Millisecond
+	connOpt := ConnOpt{
+		PacketChanMaxSend:		m.config.PacketChanMaxSend,
+		PacketChanMaxReceive:	m.config.PacketChanMaxReceive,
+		EventCallback: 			m,
+		Protocol: 				m.protocol,
+	}
 
 	for {
 
@@ -105,12 +122,14 @@ func (m *Server) Start() ( err error ) {
 		m.asyncDo(
 		 	func() {
 
-				tmpConn := newConn(conn, m)
-				addErr := m.addConn( tmpConn )
+		 		connId := m.newConnSeqId()
+				tmpConn := newConn(conn, connId, connOpt)
+				addErr := m.connManager.addConn( tmpConn )
 				if nil == addErr {
-					tmpConn.Work()
+					tmpConn.Start()
 				} else {
 					println(addErr.Error())
+					tmpConn.Close()
 				}
 			})
 	}
@@ -135,52 +154,6 @@ func (m *Server) newConnSeqId() ( seq uint64 ) {
 	return
 }
 
-func (m *Server) addConn( conn *Conn ) ( err error ) {
-
-	m.connsRWMutex.Lock()
-	defer m.connsRWMutex.Unlock()
-
-	if _, exist := m.conns[conn.seqId] ; false == exist {
-		m.conns[conn.seqId] = conn
-	} else {
-		err = &ServerError{fmt.Sprintf("the connSeqId %d already exists", conn.seqId ) }
-	}
-
-	return
-}
-
-func (m *Server) delConn( conn *Conn ) ( err error ) {
-
-	m.connsRWMutex.Lock()
-	defer m.connsRWMutex.Unlock()
-
-	if _, exist := m.conns[conn.seqId] ; true == exist {
-		delete(m.conns, conn.seqId)
-	} else {
-		err = &ServerError{fmt.Sprintf("the connSeqId %d does not exists", conn.seqId ) }
-	}
-
-	return
-}
-
-func (m *Server) findConn( seqId uint64 ) ( conn *Conn ) {
-
-	m.connsRWMutex.Lock()
-	defer m.connsRWMutex.Unlock()
-
-	conn, _ = m.conns[seqId]
-
-	return
-}
-
-func (m *Server) connCount() ( count int ) {
-	m.connsRWMutex.Lock()
-	defer m.connsRWMutex.Unlock()
-
-	count = len(m.conns)
-
-	return
-}
 
 func (m *Server) reporting () {
 
@@ -195,9 +168,10 @@ func (m *Server) reporting () {
 	for {
 		select {
 		case <-m.exitChan:
+			println(fmt.Sprintf("reporting exitChan"))
 			return
 		case <-timer.C:
-			println(fmt.Sprintf("[INFO] connection count : %d", m.connCount() ))
+			println(fmt.Sprintf("[INFO] connection count : %d", m.connManager.connCount() ))
 			timer.Reset(interval)
 		}
 

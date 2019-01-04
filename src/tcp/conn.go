@@ -7,54 +7,81 @@ import (
 	"sync/atomic"
 	"time"
 	"protocol"
+	"fmt"
 )
 
-// Error type
 var (
 	ErrConnClosing   = errors.New("use of closed network connection")
 	ErrWriteBlocking = errors.New("write packet was blocking")
 	ErrReadBlocking  = errors.New("read packet was blocking")
 )
 
-// Conn exposes a set of callbacks for the various events that occur on a connection
-type Conn struct {
+const (
+	ConnErrClosed		int8 = iota
+	ConnErrWriteBlocked
+	ConnErrReadBlocked
+)
 
-	seqId				uint64
-
-	srv               	*Server
-	conn              	*net.TCPConn  // the raw connection
-	extraData         	interface{}   // to save extra data
-	closeOnce         	sync.Once     // close the conn, once, per instance
-	closeFlag         	int32         // close flag
-	closeChan         	chan struct{} // close chanel
-	packetSendChan    	chan protocol.Packet   // packet send chanel
-	packetReceiveChan 	chan protocol.Packet   // packeet receive chanel
+type ConnErr struct {
+	ErrCode	int8
 }
 
-// ConnCallback is an interface of methods that are used as callbacks on a connection
-type ConnCallback interface {
+func (m ConnErr) Error() string {
+	switch m.ErrCode {
+	case ConnErrClosed:
+		return "connection is closed"
+	case ConnErrWriteBlocked:
+		return "packet write channel is blocked"
+	case ConnErrReadBlocked:
+		return "packet read channel is blocked"
+	default :
+		return "unknown"
+	}
+}
+
+type ConnOpt struct {
+	PacketChanMaxSend    	uint32
+	PacketChanMaxReceive 	uint32
+	EventCallback 			ConnEventCallback
+	Protocol 				protocol.Protocol
+}
+
+type ConnEventCallback interface {
 	// OnConnect is called when the connection was accepted,
-	// If the return value of false is closed
-	OnConnect(*Conn) bool
+	OnConnected(*Conn)
 
 	// OnMessage is called when the connection receives a packet,
-	// If the return value of false is closed
-	OnMessage(*Conn, protocol.Packet) bool
+	OnMessage(*Conn, protocol.Packet)
 
 	// OnClose is called when the connection closed
-	OnClose(*Conn)
+	OnClosed(*Conn)
 }
 
-// newConn returns a wrapper of raw conn
-func newConn(conn *net.TCPConn, srv *Server) *Conn {
+type Conn struct {
+	id					uint64
+	rawConn            	*net.TCPConn
+	extraData         	interface{}
+	eventCallback 		ConnEventCallback
+	protocol 			protocol.Protocol
+	waitGroup 			sync.WaitGroup
+	closeOnce         	sync.Once
+	startOnce 			sync.Once
+	closeFlag         	int32
+	chClose	        	chan struct{}
+	packetChanSend    	chan protocol.Packet
+	packetChanReceive 	chan protocol.Packet
+}
+
+func newConn(conn *net.TCPConn, id uint64, connOpt ConnOpt) *Conn {
 
 	return &Conn{
-		seqId:				srv.newConnSeqId(),
-		srv:               	srv,
-		conn:              	conn,
-		closeChan:         	make(chan struct{}),
-		packetSendChan:    	make(chan protocol.Packet, srv.config.PacketSendChanLimit),
-		packetReceiveChan: 	make(chan protocol.Packet, srv.config.PacketReceiveChanLimit),
+		id:					id,
+		rawConn:           	conn,
+		eventCallback:		connOpt.EventCallback,
+		protocol: 			connOpt.Protocol,
+		chClose:         	make(chan struct{}),
+		packetChanSend:    	make(chan protocol.Packet, connOpt.PacketChanMaxSend),
+		packetChanReceive: 	make(chan protocol.Packet, connOpt.PacketChanMaxReceive),
 	}
 }
 
@@ -70,20 +97,33 @@ func (m *Conn) PutExtraData(data interface{}) {
 
 // GetRawConn returns the raw net.TCPConn from the Conn
 func (m *Conn) GetRawConn() *net.TCPConn {
-	return m.conn
+	return m.rawConn
 }
 
 // Close closes the connection
 func (m *Conn) Close() {
-	m.closeOnce.Do(func() {
-		atomic.StoreInt32(&m.closeFlag, 1)
-		close(m.closeChan)
-		close(m.packetSendChan)
-		close(m.packetReceiveChan)
-		m.conn.Close()
-		m.srv.callback.OnClose(m)
+	println("Close() in")
+	m.closeOnce.Do(
+
+		func() {
+
+			go func() {
+				atomic.StoreInt32(&m.closeFlag, 1)
+				close(m.chClose)
+
+				println("Close() before wait")
+				m.waitGroup.Wait()
+
+				println("Close() after wait")
+
+				close(m.packetChanSend)
+				close(m.packetChanReceive)
+				m.rawConn.Close()
+				m.eventCallback.OnClosed(m)
+			}()
 	})
 }
+
 
 // Closed indicates whether or not the connection is closed
 func (m *Conn) Closed() bool {
@@ -94,125 +134,137 @@ func (m *Conn) Closed() bool {
 func (m *Conn) AsyncWritePacket(p protocol.Packet, timeout time.Duration) (err error) {
 
 	if m.Closed() {
-		return ErrConnClosing
+		err = ConnErr{ConnErrClosed}
+		return
 	}
 
 	defer func() {
 		if e := recover(); e != nil {
-			err = ErrConnClosing
+			err = ConnErr{ConnErrClosed}
 		}
 	}()
 
-	if timeout == 0 {
+	if 0 >= timeout {
 		select {
-			case m.packetSendChan <- p:
-				return nil
+			case m.packetChanSend <- p:
+				return
 			default:
-				return ErrWriteBlocking
+				err = ConnErr{ConnErrWriteBlocked}
+				return
 		}
 
 	} else {
 		select {
-			case m.packetSendChan <- p:
-				return nil
-			case <-m.closeChan:
-				return ErrConnClosing
+			case m.packetChanSend <- p:
+				return
+			case <-m.chClose:
+				err = ConnErr{ConnErrClosed}
+				return
 			case <-time.After(timeout):
-				return ErrWriteBlocking
+				err = ConnErr{ConnErrWriteBlocked}
+				return
 		}
 	}
 
 }
 
-// Do it
-func (m *Conn) Work() bool {
+func (m *Conn) Start() {
 
-	if !m.srv.callback.OnConnect(m) {
-		return false
-	}
-
-	m.srv.asyncDo(m.handleLoop)
-	m.srv.asyncDo(m.readLoop)
-	m.srv.asyncDo(m.writeLoop)
-
-	return true
+	m.startOnce.Do(func() {
+		m.eventCallback.OnConnected(m)
+		m.asyncDo(m.dispatching)
+		m.asyncDo(m.reading)
+		m.asyncDo(m.writing)
+	})
 }
 
-func (m *Conn) readLoop() {
+func (m *Conn) asyncDo( fn func() ) {
 
-	defer func() {
-		recover()
-		m.Close()
-	}()
-
-	for {
-		select {
-			case <-m.srv.exitChan:
-				return
-			case <-m.closeChan:
-				return
-			default:
-		}
-
-		p, err := m.srv.protocol.ReadPacket(m.conn)
-		if err != nil {
-			return
-		}
-
-		m.packetReceiveChan <- p
-	}
-}
-
-func (m *Conn) writeLoop() {
-	defer func() {
-		recover()
-		m.Close()
-	}()
-
-	for {
-		select {
-		case <-m.srv.exitChan:
-			return
-		case <-m.closeChan:
-			return
-		case p := <-m.packetSendChan:
-			if m.Closed() {
-				return
-			}
-			if _, err := m.conn.Write(p.Serialize()); err != nil {
-				return
-			}
-		}
-	}
-}
-
-func (m *Conn) handleLoop() {
-	defer func() {
-		recover()
-		m.Close()
-	}()
-
-	for {
-		select {
-		case <-m.srv.exitChan:
-			return
-		case <-m.closeChan:
-			return
-		case p := <-m.packetReceiveChan:
-			if m.Closed() {
-				return
-			}
-			if !m.srv.callback.OnMessage(m, p) {
-				return
-			}
-		}
-	}
-}
-
-func asyncDo(fn func(), wg *sync.WaitGroup) {
-	wg.Add(1)
+	m.waitGroup.Add(1)
 	go func() {
 		fn()
-		wg.Done()
+
+		println("asyncDo Done")
+		m.waitGroup.Done()
 	}()
+}
+
+func (m *Conn) reading() {
+
+	defer func() {
+		println("reading return")
+		recover()
+		m.Close()
+	}()
+
+	for {
+
+		select {
+			case <-m.chClose:
+				println(fmt.Sprintf("seqId : %d, reading() sensed chClose", m.id))
+				p, err := m.protocol.ReadPacket(m.rawConn)
+				if err != nil {
+					println(fmt.Sprintf("seqId : %d, reading() ReadPacket err : %s", m.id, err.Error() ))
+					return
+				}
+				m.packetChanReceive <- p
+				return
+			default:
+				p, err := m.protocol.ReadPacket(m.rawConn)
+				if err != nil {
+					println(fmt.Sprintf("seqId : %d, reading() ReadPacket err : %s", m.id, err.Error() ))
+					return
+				}
+				m.packetChanReceive <- p
+		}
+
+	}
+}
+
+func (m *Conn) writing() {
+
+	defer func() {
+		println("writing return")
+		recover()
+		m.Close()
+	}()
+
+	for {
+		select {
+		case <-m.chClose:
+			println(fmt.Sprintf("seqId : %d, writing sensed chClose ", m.id))
+			return
+		case p := <-m.packetChanSend:
+			if m.Closed() {
+				return
+			}
+			if _, err := m.rawConn.Write(p.Serialize()); err != nil {
+				println(fmt.Sprintf("seqId : %d, writing conn Write err: %s", m.id, err.Error() ))
+				return
+			}
+		}
+	}
+}
+
+func (m *Conn) dispatching() {
+
+	defer func() {
+		println("dispatching return")
+		recover()
+		m.Close()
+	}()
+
+	for {
+		select {
+		case <-m.chClose:
+			println(fmt.Sprintf("seqId : %d, dispatching sensed chClose", m.id))
+			return
+		case p := <-m.packetChanReceive:
+			if m.Closed() {
+				return
+			}
+
+			m.eventCallback.OnMessage(m, p)
+		}
+	}
 }

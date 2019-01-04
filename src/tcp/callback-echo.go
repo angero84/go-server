@@ -6,22 +6,23 @@ import (
 	"protocol"
 )
 
-type CallbackEcho struct{}
+type CallbackEcho struct{
+}
 
-func (m *CallbackEcho) OnConnect(c *Conn) bool {
+func (m *CallbackEcho) OnConnected(c *Conn) {
 	addr := c.GetRawConn().RemoteAddr()
 	c.PutExtraData(addr)
 	fmt.Println("OnConnect:", addr)
-	return true
 }
 
-func (m *CallbackEcho) OnMessage(c *Conn, p protocol.Packet) bool {
+func (m *CallbackEcho) OnMessage(c *Conn, p protocol.Packet) {
 	echoPacket := p.(*protocol.EchoPacket)
 	fmt.Printf("OnMessage:[%v] [%v]\n", echoPacket.GetLength(), string(echoPacket.GetBody()))
 	c.AsyncWritePacket(protocol.NewEchoPacket(echoPacket.Serialize(), true), time.Second)
-	return true
+
 }
 
-func (m *CallbackEcho) OnClose(c *Conn) {
+func (m *CallbackEcho) OnClosed(c *Conn) {
 	fmt.Println("OnClose:", c.GetExtraData())
+
 }

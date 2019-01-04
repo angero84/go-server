@@ -10,12 +10,15 @@ import (
 	"tcp"
 	"protocol"
 	"io/ioutil"
+
 )
 
 
 func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
+
+
 
 	serverConfigBytes, err := ioutil.ReadFile("configServer.json")
 	if nil != err {
@@ -30,8 +33,6 @@ func main() {
 	}
 
 	go srv.Start()
-
-
 
 	chSig := make(chan os.Signal)
 	signal.Notify(chSig, syscall.SIGINT, syscall.SIGTERM)
