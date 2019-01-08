@@ -6,22 +6,25 @@ import (
 	"time"
 	"protocol"
 	"fmt"
-	"encoding/json"
 	"sync/atomic"
+	log "logger"
 )
 
 type Config struct {
-	Port 					uint16	`json:"Port"`
 	PacketChanMaxSend    	uint32	`json:"PacketChanMaxSend"`
 	PacketChanMaxReceive 	uint32	`json:"PacketChanMaxReceive"`
 	AcceptTimeout			uint32	`json:"AcceptTimeout"`
-
+	NoDelay					bool	`json:"NoDelay"`
+	KeepAliveTime 			uint32	`json:"KeepAliveTime"`
+	UseLinger 				bool 	`json:"UseLinger"`
+	LingerTime 				uint32 	`json:"LingerTime"`
 	ReportingIntervalTime	uint32 	`json:"ReportingIntervalTime"`
 }
 
 
 
 type Server struct {
+	port 			uint32
 	config    		*Config         // server configuration
 	callback  		ConnEventCallback    // message callbacks in connection
 	protocol  		protocol.Protocol        // customize packet protocol
@@ -32,16 +35,11 @@ type Server struct {
 	connManager   	*ConnManager
 }
 
-func NewServer(configBytes []byte, callback ConnEventCallback, protocol protocol.Protocol) ( srv *Server, err error ) {
+func NewServer(port uint32, config *Config, callback ConnEventCallback, protocol protocol.Protocol) ( srv *Server, err error ) {
 
-	config := &Config{}
-
-	err = json.Unmarshal(configBytes, config)
-	if nil != err {
-		return
-	}
 
 	srv = &Server{
+		port:			port,
 		config:    		config,
 		callback:  		callback,
 		protocol:  		protocol,
@@ -56,13 +54,16 @@ func NewServer(configBytes []byte, callback ConnEventCallback, protocol protocol
 func (m *Server) OnConnected(c *Conn) {
 	addr := c.GetRawConn().RemoteAddr()
 	c.PutExtraData(addr)
-	fmt.Println("OnConnect:", addr)
+	log.LogInfo("OnConnected IP : %s, Port : %s", c.remoteHostIP, c.remotePort)
+
+	m.connManager.addConn(c)
+
 }
 
 func (m *Server) OnMessage(c *Conn, p protocol.Packet) {
 	echoPacket := p.(*protocol.EchoPacket)
 	fmt.Printf("OnMessage:[%v] [%v]\n", echoPacket.GetLength(), string(echoPacket.GetBody()))
-	c.AsyncWritePacket(protocol.NewEchoPacket(echoPacket.Serialize(), true), time.Second)
+	c.SendWithTimeout(protocol.NewEchoPacket(echoPacket.Serialize(), true), time.Second)
 
 }
 
@@ -75,7 +76,7 @@ func (m *Server) OnClosed(c *Conn) {
 func (m *Server) Start() ( err error ) {
 
 	var tcpAddr *net.TCPAddr
-	tcpAddr, err = net.ResolveTCPAddr("tcp4", fmt.Sprintf(":%d", m.config.Port))
+	tcpAddr, err = net.ResolveTCPAddr("tcp4", fmt.Sprintf(":%d", m.port))
 	if nil != err {
 		return
 	}
@@ -100,6 +101,10 @@ func (m *Server) Start() ( err error ) {
 		PacketChanMaxReceive:	m.config.PacketChanMaxReceive,
 		EventCallback: 			m,
 		Protocol: 				m.protocol,
+		NoDelay:				m.config.NoDelay,
+		KeepAliveTime: 			time.Duration(m.config.KeepAliveTime)*time.Millisecond,
+		UseLinger: 				m.config.UseLinger,
+		LingerTime:				m.config.LingerTime,
 	}
 
 	for {
@@ -107,7 +112,6 @@ func (m *Server) Start() ( err error ) {
 		select {
 		case <-m.exitChan:
 			return
-
 		default:
 		}
 
@@ -115,22 +119,16 @@ func (m *Server) Start() ( err error ) {
 
 		conn, acceptErr := tcpListener.AcceptTCP()
 		if nil != acceptErr {
-			//println("accept error : ", err.Error())
+			println("accept error : ", acceptErr.Error())
 			continue
 		}
 
 		m.asyncDo(
 		 	func() {
 
-		 		connId := m.newConnSeqId()
+		 		connId 	:= m.newConnSeqId()
 				tmpConn := newConn(conn, connId, connOpt)
-				addErr := m.connManager.addConn( tmpConn )
-				if nil == addErr {
-					tmpConn.Start()
-				} else {
-					println(addErr.Error())
-					tmpConn.Close()
-				}
+				tmpConn.Start()
 			})
 	}
 }

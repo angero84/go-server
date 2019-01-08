@@ -44,7 +44,13 @@ type ConnOpt struct {
 	PacketChanMaxReceive 	uint32
 	EventCallback 			ConnEventCallback
 	Protocol 				protocol.Protocol
+	NoDelay					bool
+	KeepAliveTime			time.Duration
+	UseLinger 				bool
+	LingerTime 				uint32
 }
+
+
 
 type ConnEventCallback interface {
 	// OnConnect is called when the connection was accepted,
@@ -70,9 +76,33 @@ type Conn struct {
 	chClose	        	chan struct{}
 	packetChanSend    	chan protocol.Packet
 	packetChanReceive 	chan protocol.Packet
+
+	remoteHostIP		string
+	remotePort 			string
 }
 
 func newConn(conn *net.TCPConn, id uint64, connOpt ConnOpt) *Conn {
+
+	host, port, err := net.SplitHostPort(conn.RemoteAddr().String())
+	if nil != err {
+		host = "none"
+		port = "none"
+	}
+
+	conn.SetNoDelay(connOpt.NoDelay)
+	if 0 < connOpt.KeepAliveTime {
+		conn.SetKeepAlive(true)
+		conn.SetKeepAlivePeriod(connOpt.KeepAliveTime)
+	} else {
+		conn.SetKeepAlive(false)
+	}
+
+	if connOpt.UseLinger {
+		conn.SetLinger(int(connOpt.LingerTime/1000))
+	} else {
+		conn.SetLinger(-1)
+	}
+
 
 	return &Conn{
 		id:					id,
@@ -82,6 +112,8 @@ func newConn(conn *net.TCPConn, id uint64, connOpt ConnOpt) *Conn {
 		chClose:         	make(chan struct{}),
 		packetChanSend:    	make(chan protocol.Packet, connOpt.PacketChanMaxSend),
 		packetChanReceive: 	make(chan protocol.Packet, connOpt.PacketChanMaxReceive),
+		remoteHostIP: 		host,
+		remotePort: 		port,
 	}
 }
 
@@ -101,26 +133,11 @@ func (m *Conn) GetRawConn() *net.TCPConn {
 }
 
 // Close closes the connection
-func (m *Conn) Close() {
+func (m *Conn) Close( gracefully bool ) {
 	println("Close() in")
 	m.closeOnce.Do(
-
 		func() {
-
-			go func() {
-				atomic.StoreInt32(&m.closeFlag, 1)
-				close(m.chClose)
-
-				println("Close() before wait")
-				m.waitGroup.Wait()
-
-				println("Close() after wait")
-
-				close(m.packetChanSend)
-				close(m.packetChanReceive)
-				m.rawConn.Close()
-				m.eventCallback.OnClosed(m)
-			}()
+			go m.close( gracefully )
 	})
 }
 
@@ -130,8 +147,32 @@ func (m *Conn) Closed() bool {
 	return atomic.LoadInt32(&m.closeFlag) == 1
 }
 
+func (m *Conn) Send(p protocol.Packet) (err error)  {
+
+	if m.Closed() {
+		err = ConnErr{ConnErrClosed}
+		return
+	}
+
+	defer func() {
+		if e := recover(); e != nil {
+			err = ConnErr{ConnErrClosed}
+		}
+	}()
+
+	select {
+	case m.packetChanSend <- p:
+		return
+	default:
+		err = ConnErr{ConnErrWriteBlocked}
+		m.Close(true)
+		return
+	}
+
+}
+
 // AsyncWritePacket async writes a packet, this method will never block
-func (m *Conn) AsyncWritePacket(p protocol.Packet, timeout time.Duration) (err error) {
+func (m *Conn) SendWithTimeout(p protocol.Packet, timeout time.Duration) (err error) {
 
 	if m.Closed() {
 		err = ConnErr{ConnErrClosed}
@@ -150,6 +191,7 @@ func (m *Conn) AsyncWritePacket(p protocol.Packet, timeout time.Duration) (err e
 				return
 			default:
 				err = ConnErr{ConnErrWriteBlocked}
+				m.Close(true)
 				return
 		}
 
@@ -162,6 +204,7 @@ func (m *Conn) AsyncWritePacket(p protocol.Packet, timeout time.Duration) (err e
 				return
 			case <-time.After(timeout):
 				err = ConnErr{ConnErrWriteBlocked}
+				m.Close(true)
 				return
 		}
 	}
@@ -171,7 +214,9 @@ func (m *Conn) AsyncWritePacket(p protocol.Packet, timeout time.Duration) (err e
 func (m *Conn) Start() {
 
 	m.startOnce.Do(func() {
-		m.eventCallback.OnConnected(m)
+		if nil != m.eventCallback {
+			m.eventCallback.OnConnected(m)
+		}
 		m.asyncDo(m.dispatching)
 		m.asyncDo(m.reading)
 		m.asyncDo(m.writing)
@@ -189,12 +234,46 @@ func (m *Conn) asyncDo( fn func() ) {
 	}()
 }
 
+func (m *Conn) close ( gracefully bool ) {
+
+	atomic.StoreInt32(&m.closeFlag, 1)
+	close(m.chClose)
+	close(m.packetChanSend)
+	close(m.packetChanReceive)
+
+	if gracefully {
+		for p := range m.packetChanSend {
+			if _, err := m.rawConn.Write(p.Serialize()); err != nil {
+				println(fmt.Sprintf("seqId : %d, close conn Write err: %s", m.id, err.Error() ))
+				break
+			}
+
+			println("close gracefully Write")
+		}
+
+		/*for p := range m.packetChanReceive {
+			m.eventCallback.OnMessage(m, p)
+			println("close gracefully OnMessage")
+		}*/
+	}
+
+	println("Close() before wait")
+	m.waitGroup.Wait()
+
+	println("Close() after wait")
+
+	m.rawConn.Close()
+	if nil != m.eventCallback {
+		m.eventCallback.OnClosed(m)
+	}
+}
+
 func (m *Conn) reading() {
 
 	defer func() {
 		println("reading return")
 		recover()
-		m.Close()
+		m.Close(true)
 	}()
 
 	for {
@@ -202,14 +281,11 @@ func (m *Conn) reading() {
 		select {
 			case <-m.chClose:
 				println(fmt.Sprintf("seqId : %d, reading() sensed chClose", m.id))
-				p, err := m.protocol.ReadPacket(m.rawConn)
-				if err != nil {
-					println(fmt.Sprintf("seqId : %d, reading() ReadPacket err : %s", m.id, err.Error() ))
-					return
-				}
-				m.packetChanReceive <- p
 				return
 			default:
+				if nil == m.protocol {
+					return
+				}
 				p, err := m.protocol.ReadPacket(m.rawConn)
 				if err != nil {
 					println(fmt.Sprintf("seqId : %d, reading() ReadPacket err : %s", m.id, err.Error() ))
@@ -226,7 +302,7 @@ func (m *Conn) writing() {
 	defer func() {
 		println("writing return")
 		recover()
-		m.Close()
+		m.Close(true)
 	}()
 
 	for {
@@ -251,7 +327,7 @@ func (m *Conn) dispatching() {
 	defer func() {
 		println("dispatching return")
 		recover()
-		m.Close()
+		m.Close(true)
 	}()
 
 	for {
@@ -264,7 +340,12 @@ func (m *Conn) dispatching() {
 				return
 			}
 
-			m.eventCallback.OnMessage(m, p)
+			if nil != m.eventCallback {
+				m.eventCallback.OnMessage(m, p)
+			} else {
+				return
+			}
+
 		}
 	}
 }
