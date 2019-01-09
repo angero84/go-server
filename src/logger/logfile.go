@@ -1,14 +1,17 @@
 package logger
 
 import (
+	"object"
 	"time"
 	"os"
 	"fmt"
 	"sync"
+
 )
 
 type kLogFile struct {
 	*os.File
+	*object.KObject
 	swapType 			KLogFileShiftType
 	rootDirectoryName	string
 	prefix		 		string
@@ -25,6 +28,7 @@ func NewKLogFile( opt *KLogFileOpt ) ( logfile *kLogFile, err error ) {
 	}
 
 	logfile = &kLogFile{
+		KObject: 			object.NewKObject("kLogFile"),
 		rootDirectoryName: 	opt.RootDirectoryName,
 		prefix: 			opt.Prefix,
 		swapType:			opt.ShiftType,

@@ -1,21 +1,19 @@
 package main
 
 import (
-	"runtime"
-
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
+	"protocol"
+	"runtime"
 	"syscall"
 	"tcp"
-	"protocol"
-	"io/ioutil"
+	"time"
 
 	"encoding/json"
 
 	log "logger"
-
-	"time"
 )
 
 type serverConfig struct {
@@ -25,17 +23,12 @@ type serverConfig struct {
 
 func main() {
 
-
-	tempChan := make(chan int)
-	tempChan = nil
-
 	go func() {
 
 		select {
 		case <-time.After(time.Second*5):
-			tempChan <- 1
+			log.CloseWait()
 		}
-
 	}()
 
 	log.LogInfo("testserver started")

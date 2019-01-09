@@ -2,44 +2,29 @@ package logger
 
 
 import (
+	"fmt"
 	"log"
 	"io"
-
-	"util"
-	"time"
+	"object"
 )
 
 type kLogger struct {
 	*log.Logger
+	*object.KObject
 
 	queue		chan func()
-
-	obj			chan struct{}
-	async		*util.AsyncContainer
 }
 
 func NewkLogger( writer *io.Writer, prefix string ) ( klogger *kLogger, err error ) {
 
 	klogger = &kLogger{
 		Logger: 	log.New( *writer, prefix, log.Ltime|log.Lmicroseconds ),
+		KObject:	object.NewKObject("kLogger"),
 		queue:		make(chan func(), KLOG_QUEUE_CHAN_MAX),
-		obj:		make(chan struct{}),
-		async: 		util.NewAsyncContainer("kLogger" ),
 	}
 
-	klogger.async.AsyncDo(klogger.logging)
+	klogger.AsyncDo(klogger.logging)
 
-	return
-}
-
-func (m *kLogger) CloseWait() ( err error ) {
-	close(m.obj)
-	m.async.Wait()
-	return
-}
-
-func (m *kLogger) CloseImmediately() ( err error ) {
-	close(m.obj)
 	return
 }
 
@@ -65,10 +50,16 @@ func (m *kLogger) PrintfWithLogType( logType KLogType, format string, v ...inter
 
 func (m *kLogger) logging() {
 
+	defer func() {
+		if err := recover() ; nil != err {
+			println( fmt.Sprintf("!!!---> logging() recovered : %v", err) )
+		}
+	}()
+
 	for {
 		select {
-		case <-m.obj:
-			//println("logging closed!!", m.async.Name())
+		case <-m.DestroyRequest():
+			//println("logging closed!!", m.Name())
 			return
 		case fn := <-m.queue:
 			fn()

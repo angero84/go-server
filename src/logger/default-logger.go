@@ -109,14 +109,6 @@ func NewKDefaultLogger( opt *KDefaultLoggerOpt ) ( kdlogger *kDefaultLogger, err
 	return
 }
 
-func (m *kDefaultLogger) CloseWait() ( err error ) {
-
-	for _, r := range m.kLoggers {
-		r.CloseWait()
-	}
-	return
-}
-
 func (m *kDefaultLogger) Log( writerType KLogWriterType, logType KLogType, format string, args ...interface{}) {
 
 	if 0 > writerType || KLogWriterType_Max <= writerType {
@@ -240,11 +232,5 @@ func LogConsoleFatal( format string, args ...interface{} ){
 func LogConsoleDebug( format string, args ...interface{} ){
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_Console, KLogType_Debug, format, args...)
-	}
-}
-
-func CloseWait() {
-	if nil != instanceKDefaultLogger {
-		instanceKDefaultLogger.CloseWait()
 	}
 }
