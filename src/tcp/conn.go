@@ -8,6 +8,8 @@ import (
 	"time"
 	"protocol"
 	"fmt"
+	"util"
+	"logger"
 )
 
 var (
@@ -79,6 +81,8 @@ type Conn struct {
 
 	remoteHostIP		string
 	remotePort 			string
+
+	lifeTime 			*util.KTimer
 }
 
 func newConn(conn *net.TCPConn, id uint64, connOpt ConnOpt) *Conn {
@@ -114,6 +118,7 @@ func newConn(conn *net.TCPConn, id uint64, connOpt ConnOpt) *Conn {
 		packetChanReceive: 	make(chan protocol.Packet, connOpt.PacketChanMaxReceive),
 		remoteHostIP: 		host,
 		remotePort: 		port,
+		lifeTime: 			util.NewKTimer(),
 	}
 }
 
@@ -217,6 +222,9 @@ func (m *Conn) Start() {
 		if nil != m.eventCallback {
 			m.eventCallback.OnConnected(m)
 		}
+
+		logger.CloseWait()
+
 		m.asyncDo(m.dispatching)
 		m.asyncDo(m.reading)
 		m.asyncDo(m.writing)
@@ -266,6 +274,7 @@ func (m *Conn) close ( gracefully bool ) {
 	if nil != m.eventCallback {
 		m.eventCallback.OnClosed(m)
 	}
+
 }
 
 func (m *Conn) reading() {

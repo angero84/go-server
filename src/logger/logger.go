@@ -4,40 +4,46 @@ package logger
 import (
 	"log"
 	"io"
+
+	"util"
+	"time"
 )
 
-type KLogType int8
+type kLogger struct {
+	*log.Logger
 
-const (
-	KLogType_Info KLogType = iota
-	KLogType_Warn
-	KLogType_Fatal
-	KLogType_Debug
-	KLogType_Max
-)
+	queue		chan func()
 
-type KLogger struct {
-	logger	*log.Logger
-	writer 	*io.Writer
+	obj			chan struct{}
+	async		*util.AsyncContainer
 }
 
-func NewKLogger( writer *io.Writer, prefix string ) *KLogger {
+func NewkLogger( writer *io.Writer, prefix string ) ( klogger *kLogger, err error ) {
 
-	return &KLogger{
-		logger: 	log.New( *writer, prefix, log.Ltime|log.Lmicroseconds ),
+	klogger = &kLogger{
+		Logger: 	log.New( *writer, prefix, log.Ltime|log.Lmicroseconds ),
+		queue:		make(chan func(), KLOG_QUEUE_CHAN_MAX),
+		obj:		make(chan struct{}),
+		async: 		util.NewAsyncContainer("kLogger" ),
 	}
+
+	klogger.async.AsyncDo(klogger.logging)
+
+	return
 }
 
-func (m *KLogger) Logger() *log.Logger { return m.logger }
-func (m *KLogger) Writer() *io.Writer { return m.writer }
-
-func (m *KLogger) SetWriter( writer *io.Writer ) { m.logger.SetOutput(*writer) }
-
-func (m *KLogger) Log(format string, args ...interface{}) {
-	m.log(format, args...)
+func (m *kLogger) CloseWait() ( err error ) {
+	close(m.obj)
+	m.async.Wait()
+	return
 }
 
-func (m *KLogger) LogType( logType KLogType, format string, args ...interface{}) {
+func (m *kLogger) CloseImmediately() ( err error ) {
+	close(m.obj)
+	return
+}
+
+func (m *kLogger) PrintfWithLogType( logType KLogType, format string, v ...interface{}) {
 
 	switch logType {
 	case KLogType_Info:
@@ -52,11 +58,23 @@ func (m *KLogger) LogType( logType KLogType, format string, args ...interface{})
 		format = "[UNKNOWN] " + format
 	}
 
-	m.log(format, args...)
+	m.queue <- func() { m.Logger.Printf(format, v...) }
+
+	//m.Logger.Printf(format, v...)
 }
 
-func (m *KLogger) log( format string, args ...interface{}) {
-	m.logger.Printf(format, args...)
+func (m *kLogger) logging() {
+
+	for {
+		select {
+		case <-m.obj:
+			//println("logging closed!!", m.async.Name())
+			return
+		case fn := <-m.queue:
+			fn()
+		}
+	}
+
 }
 
 

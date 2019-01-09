@@ -14,6 +14,8 @@ import (
 	"encoding/json"
 
 	log "logger"
+
+	"time"
 )
 
 type serverConfig struct {
@@ -21,10 +23,21 @@ type serverConfig struct {
 	TcpConfig		tcp.Config 		`json:"TcpConfig"`
 }
 
-
 func main() {
 
-	//log.Init( &log.KDefaultLoggerOpt{ "log", "log"} )
+
+	tempChan := make(chan int)
+	tempChan = nil
+
+	go func() {
+
+		select {
+		case <-time.After(time.Second*5):
+			tempChan <- 1
+		}
+
+	}()
+
 	log.LogInfo("testserver started")
 
 	runtime.GOMAXPROCS(runtime.NumCPU())

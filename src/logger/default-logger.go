@@ -8,114 +8,138 @@ import (
 	"fmt"
 )
 
-var instanceDefaultLogger *KDefaultLogger
-var initOnce sync.Once
+var instanceKDefaultLogger *kDefaultLogger
+var instanceKDefaultLoggerOnce sync.Once
 
 func init() {
 
-	initOnce.Do( func() {
+	instanceKDefaultLoggerOnce.Do( func() {
 
-		tmpDefaultLogger, err := NewKDefaultLogger( &KDefaultLoggerOpt{
-			logName:			"log",
-			rootDirectoryName:	"log",
+		println("---> KDefaultLogger auto initialization start")
+
+		tmpKDefaultLogger, err := NewKDefaultLogger( &KDefaultLoggerOpt{
+			LoggerName:			"log",
+			RootDirectoryName:	"default",
+			LogTypeDepth: 		KLogType_Debug,
 		})
 
 		if nil != err {
-			println("Failed create default logger : ", err.Error())
+			println("!!!---> Failed init KDefaultLogger : ", err.Error())
 			return
 		}
 
-		instanceDefaultLogger = tmpDefaultLogger
+		instanceKDefaultLogger = tmpKDefaultLogger
+
+		println("---> KDefaultLogger initialized")
 
 	})
 }
 
 func Init( opt *KDefaultLoggerOpt ) {
 
-	initOnce.Do( func() {
+	instanceKDefaultLoggerOnce.Do( func() {
+
+		println("---> KDefaultLogger initialization start")
 
 		tmpDefaultLogger, err := NewKDefaultLogger( opt )
 		if nil != err {
-			println("Failed create default logger : ", err.Error())
+			println("!!!---> Failed init KDefaultLogger : ", err.Error())
 			return
 		}
 
-		instanceDefaultLogger = tmpDefaultLogger
+		instanceKDefaultLogger = tmpDefaultLogger
+
+		println("---> KDefaultLogger initialized")
 
 	})
 }
 
-type KLogWriterType int8
-const (
-	KLogWriterType_All		KLogWriterType = iota
-	KLogWriterType_Console
-	KLogWriterType_File
-	KLogWriterType_Max
-)
+type kDefaultLogger struct {
+	kLoggers		[]*kLogger
+	loggerName 		string
+	kLogTypeDepth	KLogType
+	kLogFile 		*kLogFile
 
-type KDefaultLoggerOpt struct {
-	logName 			string
-	rootDirectoryName	string
 }
 
-type KDefaultLogger struct {
-	loggers		[]*KLogger
-	logName 	string
-	logFile 	*KLogFile
-}
+func NewKDefaultLogger( opt *KDefaultLoggerOpt ) ( kdlogger *kDefaultLogger, err error ) {
 
-func NewKDefaultLogger( opt *KDefaultLoggerOpt ) ( rtLogger *KDefaultLogger, err error ) {
-
-	rtLogger = &KDefaultLogger{
-		loggers: 		make([]*KLogger, KLogWriterType_Max),
-		logName: 		opt.logName,
-	}
-
-	rtLogger.logFile, err = NewKLogFile( KLogFileShiftType_Day, opt.rootDirectoryName, opt.logName )
+	err = opt.Verify()
 	if nil != err {
 		return
 	}
 
+	kdlogger = &kDefaultLogger{
+		kLoggers: 		make([]*kLogger, KLogWriterType_Max),
+		loggerName: 	opt.LoggerName,
+		kLogTypeDepth:	opt.LogTypeDepth,
+	}
+
+	var klogfile *kLogFile
+	klogfile, err = NewKLogFile( &KLogFileOpt{ KLogFileShiftType_Day, opt.RootDirectoryName, opt.LoggerName } )
+	if nil != err {
+		return
+	}
+	kdlogger.kLogFile = klogfile
+
 	for i := KLogWriterType(0) ; i < KLogWriterType_Max ; i++ {
 
 		var logWriter io.Writer
+		var klogger *kLogger
 
 		switch i {
 		case KLogWriterType_All:
-			logWriter = io.MultiWriter(rtLogger.logFile.file, os.Stdout)
+			logWriter = io.MultiWriter(kdlogger.kLogFile, os.Stdout)
 		case KLogWriterType_Console:
 			logWriter = io.MultiWriter(os.Stdout)
 		case KLogWriterType_File:
-			logWriter = io.MultiWriter(rtLogger.logFile.file)
+			logWriter = io.MultiWriter(kdlogger.kLogFile)
 		default:
-			err = errors.New( fmt.Sprintf("Undefined KLogWriterType : %d", i ))
+			err = errors.New( fmt.Sprintf("NewKDefaultLogger() Undefined KLogWriterType : %d", i ))
 			return
 		}
 
-		rtLogger.loggers[i] = NewKLogger(&logWriter,"")
+		klogger, err = NewkLogger(&logWriter,"")
+		if nil != err {
+			return
+		}
+		kdlogger.kLoggers[i] = klogger
 	}
 
 	return
 }
 
-func (m *KDefaultLogger) Log( writerType KLogWriterType, logType KLogType, format string, args ...interface{}) {
+func (m *kDefaultLogger) CloseWait() ( err error ) {
 
-	if 0 > writerType || KLogWriterType_Max <= writerType {
-		println(fmt.Sprintf("KDefaultLogger.Log() unknown writerType : %d", writerType ))
-		return
+	for _, r := range m.kLoggers {
+		r.CloseWait()
 	}
-
-	if 0 > logType || KLogType_Max <= logType {
-		println(fmt.Sprintf("KDefaultLogger.Log() unknown logType : %d", logType ))
-		return
-	}
-
-	m.loggers[writerType].LogType(logType, format, args...)
+	return
 }
 
-func (m *KDefaultLogger) checkLogFile() {
+func (m *kDefaultLogger) Log( writerType KLogWriterType, logType KLogType, format string, args ...interface{}) {
 
-	file, err := m.logFile.CheckFileShift()
+	if 0 > writerType || KLogWriterType_Max <= writerType {
+		println(fmt.Sprintf("!!!---> kDefaultLogger.Log() unknown writerType : %d", writerType ))
+		return
+	}
+
+	if logType > m.kLogTypeDepth {
+		return
+	}
+
+	/*if 0 > logType || KLogType_Max <= logType {
+		println(fmt.Sprintf("!!!---> kDefaultLogger.Log() unknown logType : %d", logType ))
+		return
+	}*/
+
+	m.checkLogFile()
+	m.kLoggers[writerType].PrintfWithLogType(logType, format, args...)
+}
+
+func (m *kDefaultLogger) checkLogFile() {
+
+	file, err := m.kLogFile.CheckFileShift()
 	if nil == err && nil != file {
 
 		for i := KLogWriterType(0) ; i < KLogWriterType_Max ; i++ {
@@ -130,91 +154,97 @@ func (m *KDefaultLogger) checkLogFile() {
 			case KLogWriterType_File:
 				logWriter = io.MultiWriter(file)
 			default:
-				err = errors.New( fmt.Sprintf("Undefined KLogWriterType : %d", i ))
+				println(fmt.Sprintf("!!!---> kDefaultLogger.checkLogFile() Undefined KLogWriterType : %d", i))
 				continue
 			}
 
-			m.loggers[i].SetWriter(&logWriter)
+			m.kLoggers[i].SetOutput(logWriter)
 		}
 	} else if nil != err {
-		println(fmt.Sprintf("checkLogFile() err : %s", err.Error()))
+		println(fmt.Sprintf("!!!---> kDefaultLogger.checkLogFile() err : %s", err.Error()))
 	}
 }
 
 func Log( writerType KLogWriterType, logType KLogType, format string, args ...interface{} ) {
-	if nil != instanceDefaultLogger {
-		instanceDefaultLogger.Log(writerType, logType, format, args...)
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(writerType, logType, format, args...)
 	}
 }
 
 func LogInfo( format string, args ...interface{} ){
-	if nil != instanceDefaultLogger {
-		instanceDefaultLogger.Log(KLogWriterType_All, KLogType_Info, format, args...)
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_All, KLogType_Info, format, args...)
 	}
 }
 
 func LogWarn( format string, args ...interface{} ){
-	if nil != instanceDefaultLogger {
-		instanceDefaultLogger.Log(KLogWriterType_All, KLogType_Warn, format, args...)
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_All, KLogType_Warn, format, args...)
 	}
 }
 
 func LogFatal( format string, args ...interface{} ){
-	if nil != instanceDefaultLogger {
-		instanceDefaultLogger.Log(KLogWriterType_All, KLogType_Fatal, format, args...)
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_All, KLogType_Fatal, format, args...)
 	}
 }
 
 func LogDebug( format string, args ...interface{} ){
-	if nil != instanceDefaultLogger {
-		instanceDefaultLogger.Log(KLogWriterType_All, KLogType_Debug, format, args...)
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_All, KLogType_Debug, format, args...)
 	}
 }
 
 func LogFileInfo( format string, args ...interface{} ){
-	if nil != instanceDefaultLogger {
-		instanceDefaultLogger.Log(KLogWriterType_File, KLogType_Info, format, args...)
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_File, KLogType_Info, format, args...)
 	}
 }
 
 func LogFileWarn( format string, args ...interface{} ){
-	if nil != instanceDefaultLogger {
-		instanceDefaultLogger.Log(KLogWriterType_File, KLogType_Warn, format, args...)
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_File, KLogType_Warn, format, args...)
 	}
 }
 
 func LogFileFatal( format string, args ...interface{} ){
-	if nil != instanceDefaultLogger {
-		instanceDefaultLogger.Log(KLogWriterType_File, KLogType_Fatal, format, args...)
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_File, KLogType_Fatal, format, args...)
 	}
 }
 
 func LogFileDebug( format string, args ...interface{} ){
-	if nil != instanceDefaultLogger {
-		instanceDefaultLogger.Log(KLogWriterType_File, KLogType_Debug, format, args...)
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_File, KLogType_Debug, format, args...)
 	}
 }
 
 func LogConsoleInfo( format string, args ...interface{} ){
-	if nil != instanceDefaultLogger {
-		instanceDefaultLogger.Log(KLogWriterType_Console, KLogType_Info, format, args...)
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_Console, KLogType_Info, format, args...)
 	}
 }
 
 func LogConsoleWarn( format string, args ...interface{} ){
-	if nil != instanceDefaultLogger {
-		instanceDefaultLogger.Log(KLogWriterType_Console, KLogType_Warn, format, args...)
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_Console, KLogType_Warn, format, args...)
 	}
 }
 
 func LogConsoleFatal( format string, args ...interface{} ){
-	if nil != instanceDefaultLogger {
-		instanceDefaultLogger.Log(KLogWriterType_Console, KLogType_Fatal, format, args...)
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_Console, KLogType_Fatal, format, args...)
 	}
 }
 
 func LogConsoleDebug( format string, args ...interface{} ){
-	if nil != instanceDefaultLogger {
-		instanceDefaultLogger.Log(KLogWriterType_Console, KLogType_Debug, format, args...)
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_Console, KLogType_Debug, format, args...)
+	}
+}
+
+func CloseWait() {
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.CloseWait()
 	}
 }

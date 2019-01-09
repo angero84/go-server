@@ -1,53 +1,33 @@
 package logger
 
 import (
-	"errors"
-	"util"
 	"time"
 	"os"
 	"fmt"
 	"sync"
 )
 
-type KLogFileShiftType int8
-
-const (
-	KLogFileShiftType_Day		KLogFileShiftType = iota
-	KLogFileShiftType_Hour
-	KLogFileShiftType_Max
-)
-
-type KLogFile struct {
+type kLogFile struct {
+	*os.File
+	swapType 			KLogFileShiftType
 	rootDirectoryName	string
 	prefix		 		string
-	swapType 			KLogFileShiftType
-	file 				*os.File
 	curDay 				int
 	curHour 			int
 	mutex 				sync.Mutex
 }
 
-func NewKLogFile( swapType KLogFileShiftType, rootDirectoryName, prefix string ) ( logfile *KLogFile, err error ) {
+func NewKLogFile( opt *KLogFileOpt ) ( logfile *kLogFile, err error ) {
 
-	if 0 > swapType || KLogFileShiftType_Max <= swapType {
-		err = errors.New("Unknown LogFileSwapType")
+	err = opt.Verify()
+	if nil != err {
 		return
 	}
 
-	if 0 < len(rootDirectoryName) && false == util.CheckStringAlphabetOnly(rootDirectoryName) {
-		err = errors.New("Set the directory name alphabet only")
-		return
-	}
-
-	if 0 >= len(prefix) || false == util.CheckStringAlphabetOnly(prefix){
-		err = errors.New("Set the prefix name alphabet only")
-		return
-	}
-
-	logfile = &KLogFile{
-		rootDirectoryName: 	rootDirectoryName,
-		prefix: 			prefix,
-		swapType:			swapType,
+	logfile = &kLogFile{
+		rootDirectoryName: 	opt.RootDirectoryName,
+		prefix: 			opt.Prefix,
+		swapType:			opt.ShiftType,
 	}
 
 	_, err = logfile.CheckFileShift()
@@ -59,11 +39,7 @@ func NewKLogFile( swapType KLogFileShiftType, rootDirectoryName, prefix string )
 	return
 }
 
-func (m *KLogFile) File () *os.File { return m.file }
-
-
-
-func (m *KLogFile) CheckFileShift() ( rtFile *os.File, err error ) {
+func (m *kLogFile) CheckFileShift() ( file *os.File, err error ) {
 
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -100,16 +76,19 @@ func (m *KLogFile) CheckFileShift() ( rtFile *os.File, err error ) {
 	fileName := m.makeFileName(now)
 	fileFullPath := parentDir + "/" + fileName
 
-	rtFile, err = os.OpenFile(fileFullPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666 )
+	file, err = os.OpenFile(fileFullPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666 )
 	if nil != err {
 		return
 	}
 
-	fileErr := m.file.Close()
-	if nil != fileErr {
-		println("CheckFileShift() old file close error : ", fileErr.Error() )
+	if nil != m.File {
+		fileErr := m.File.Close()
+		if nil != fileErr {
+			println("CheckFileShift() old file close error : ", fileErr.Error() )
+		}
 	}
-	m.file = rtFile
+
+	m.File = file
 
 	m.curDay 	= day
 	m.curHour	= hour
@@ -118,7 +97,7 @@ func (m *KLogFile) CheckFileShift() ( rtFile *os.File, err error ) {
 }
 
 
-func (m *KLogFile) makeDirectory( dname string ) ( err error ) {
+func (m *kLogFile) makeDirectory( dname string ) ( err error ) {
 
 	if _, err = os.Stat(dname); os.IsNotExist(err) {
 		err = os.MkdirAll(dname, 0755)
@@ -131,7 +110,7 @@ func (m *KLogFile) makeDirectory( dname string ) ( err error ) {
 	return
 }
 
-func (m *KLogFile) makeFileName ( now time.Time ) ( fname string ) {
+func (m *kLogFile) makeFileName ( now time.Time ) ( fname string ) {
 
 	switch m.swapType {
 	case KLogFileShiftType_Day:
