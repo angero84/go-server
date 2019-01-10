@@ -6,6 +6,7 @@ import (
 	"os"
 	"errors"
 	"fmt"
+	"object"
 )
 
 var instanceKDefaultLogger *kDefaultLogger
@@ -18,9 +19,10 @@ func init() {
 		println("---> KDefaultLogger auto initialization start")
 
 		tmpKDefaultLogger, err := NewKDefaultLogger( &KDefaultLoggerOpt{
-			LoggerName:			"log",
-			RootDirectoryName:	"default",
+			LoggerName:			"default",
+			RootDirectoryName:	"log",
 			LogTypeDepth: 		KLogType_Debug,
+			UseQueue: 			true,
 		})
 
 		if nil != err {
@@ -55,11 +57,11 @@ func Init( opt *KDefaultLoggerOpt ) {
 }
 
 type kDefaultLogger struct {
+	*object.KObject
 	kLoggers		[]*kLogger
 	loggerName 		string
 	kLogTypeDepth	KLogType
 	kLogFile 		*kLogFile
-
 }
 
 func NewKDefaultLogger( opt *KDefaultLoggerOpt ) ( kdlogger *kDefaultLogger, err error ) {
@@ -70,6 +72,7 @@ func NewKDefaultLogger( opt *KDefaultLoggerOpt ) ( kdlogger *kDefaultLogger, err
 	}
 
 	kdlogger = &kDefaultLogger{
+		KObject:		object.NewKObject("kDefaultLogger"),
 		kLoggers: 		make([]*kLogger, KLogWriterType_Max),
 		loggerName: 	opt.LoggerName,
 		kLogTypeDepth:	opt.LogTypeDepth,
@@ -99,13 +102,35 @@ func NewKDefaultLogger( opt *KDefaultLoggerOpt ) ( kdlogger *kDefaultLogger, err
 			return
 		}
 
-		klogger, err = NewkLogger(&logWriter,"")
+		klogger, err = NewkLogger(&logWriter,"", opt.UseQueue )
 		if nil != err {
 			return
 		}
 		kdlogger.kLoggers[i] = klogger
 	}
 
+	return
+}
+
+func (m *kDefaultLogger) StopGoRoutineWait() ( err error ) {
+
+	for _, r := range m.kLoggers {
+		r.StopGoRoutineWait()
+	}
+	m.kLogFile.StopGoRoutineWait()
+
+	m.KObject.StopGoRoutineWait()
+	return
+}
+
+func (m *kDefaultLogger) StopGoRoutineImmediately() ( err error ) {
+
+	for _, r := range m.kLoggers {
+		r.StopGoRoutineImmediately()
+	}
+	m.kLogFile.StopGoRoutineImmediately()
+
+	m.KObject.StopGoRoutineImmediately()
 	return
 }
 
@@ -119,11 +144,6 @@ func (m *kDefaultLogger) Log( writerType KLogWriterType, logType KLogType, forma
 	if logType > m.kLogTypeDepth {
 		return
 	}
-
-	/*if 0 > logType || KLogType_Max <= logType {
-		println(fmt.Sprintf("!!!---> kDefaultLogger.Log() unknown logType : %d", logType ))
-		return
-	}*/
 
 	m.checkLogFile()
 	m.kLoggers[writerType].PrintfWithLogType(logType, format, args...)

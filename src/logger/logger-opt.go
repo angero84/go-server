@@ -18,6 +18,12 @@ type KLogFileOpt struct {
 	Prefix 				string
 }
 
+func (m *KLogFileOpt) SetDefault() {
+	m.ShiftType 		= KLogFileShiftType_Day
+	m.RootDirectoryName	= "log"
+	m.Prefix			= "default"
+}
+
 func (m *KLogFileOpt) VerifyAndSetDefault() {
 	if err := m.Verify() ; nil != err {
 		m.SetDefault()
@@ -46,17 +52,20 @@ func (m *KLogFileOpt) Verify() ( err error ) {
 	return
 }
 
-func (m *KLogFileOpt) SetDefault() {
-	m.ShiftType 		= KLogFileShiftType_Day
-	m.RootDirectoryName	= "log"
-	m.Prefix			= "default"
-}
 
 
 type KDefaultLoggerOpt struct {
 	LoggerName 			string
 	RootDirectoryName	string
 	LogTypeDepth 		KLogType
+	UseQueue			bool
+}
+
+func (m *KDefaultLoggerOpt) SetDefault() {
+	m.LoggerName			= "default"
+	m.RootDirectoryName		= "log"
+	m.LogTypeDepth			= KLogType_Fatal
+	m.UseQueue				= true
 }
 
 func (m *KDefaultLoggerOpt) VerifyAndSetDefault() {
@@ -84,11 +93,5 @@ func (m *KDefaultLoggerOpt) Verify() ( err error ) {
 	}
 
 	return
-}
-
-func (m *KDefaultLoggerOpt) SetDefault() {
-	m.LoggerName			= "default"
-	m.RootDirectoryName		= "log"
-	m.LogTypeDepth			= KLogType_Fatal
 }
 

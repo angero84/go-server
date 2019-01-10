@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"sync"
 
+	"errors"
 )
 
 type kLogFile struct {
 	*os.File
 	*object.KObject
-	swapType 			KLogFileShiftType
+	shiftType 			KLogFileShiftType
 	rootDirectoryName	string
 	prefix		 		string
 	curDay 				int
@@ -29,16 +30,15 @@ func NewKLogFile( opt *KLogFileOpt ) ( logfile *kLogFile, err error ) {
 
 	logfile = &kLogFile{
 		KObject: 			object.NewKObject("kLogFile"),
+		shiftType:			opt.ShiftType,
 		rootDirectoryName: 	opt.RootDirectoryName,
 		prefix: 			opt.Prefix,
-		swapType:			opt.ShiftType,
 	}
 
 	_, err = logfile.CheckFileShift()
 	if nil != err {
 		return
 	}
-
 
 	return
 }
@@ -52,7 +52,7 @@ func (m *kLogFile) CheckFileShift() ( file *os.File, err error ) {
 	day 	:= now.Day()
 	hour 	:= now.Hour()
 
-	switch m.swapType {
+	switch m.shiftType {
 	case KLogFileShiftType_Day:
 		if m.curDay == day {
 			return
@@ -64,6 +64,12 @@ func (m *kLogFile) CheckFileShift() ( file *os.File, err error ) {
 	default:
 		return
 	}
+
+	defer func() {
+		if rc := recover() ; nil != rc {
+			err = errors.New(fmt.Sprintf("kLogFile.CheckFileShift() recovered : %v",rc ) )
+		}
+	}()
 
 	parentDir := ""
 	if 0 < len(m.rootDirectoryName) {
@@ -88,7 +94,7 @@ func (m *kLogFile) CheckFileShift() ( file *os.File, err error ) {
 	if nil != m.File {
 		fileErr := m.File.Close()
 		if nil != fileErr {
-			println("CheckFileShift() old file close error : ", fileErr.Error() )
+			println("kLogFile.CheckFileShift() old file close error : ", fileErr.Error() )
 		}
 	}
 
@@ -116,7 +122,7 @@ func (m *kLogFile) makeDirectory( dname string ) ( err error ) {
 
 func (m *kLogFile) makeFileName ( now time.Time ) ( fname string ) {
 
-	switch m.swapType {
+	switch m.shiftType {
 	case KLogFileShiftType_Day:
 		fname = fmt.Sprintf("%s_%04d%02d%02d.log", m.prefix, now.Year(), now.Month(), now.Day() )
 	case KLogFileShiftType_Hour:

@@ -42,6 +42,12 @@ func (m *KTimer) ElapsedMilisec() ( milisec int64 ) {
 	return
 }
 
+func (m *KTimer) ElapsedMicrosec() ( milisec int64 ) {
+	m.checkElapsed()
+	milisec = m.elapsedTime.Nanoseconds() / int64(time.Microsecond)
+	return
+}
+
 func (m *KTimer) checkElapsed() {
 	m.elapsedTime = time.Since(m.Time)
 }

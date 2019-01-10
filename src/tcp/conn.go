@@ -9,7 +9,6 @@ import (
 	"protocol"
 	"fmt"
 	"util"
-	"logger"
 )
 
 var (
@@ -222,8 +221,6 @@ func (m *Conn) Start() {
 		if nil != m.eventCallback {
 			m.eventCallback.OnConnected(m)
 		}
-
-		logger.CloseWait()
 
 		m.asyncDo(m.dispatching)
 		m.asyncDo(m.reading)

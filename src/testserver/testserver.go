@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"syscall"
 	"tcp"
-	"time"
+
 
 	"encoding/json"
 
@@ -22,14 +22,6 @@ type serverConfig struct {
 }
 
 func main() {
-
-	go func() {
-
-		select {
-		case <-time.After(time.Second*5):
-			log.CloseWait()
-		}
-	}()
 
 	log.LogInfo("testserver started")
 

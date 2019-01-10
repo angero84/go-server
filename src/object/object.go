@@ -7,25 +7,25 @@ import (
 type KObject struct {
 	name 			string
 	obj				chan struct{}
-	destroyOnce 	sync.Once
+	stopOnce 		sync.Once
 	wg				sync.WaitGroup
 }
 
 func NewKObject(name string) *KObject {
-	return &KObject{ obj:make(chan struct{}) }
+	return &KObject{name:name, obj:make(chan struct{})}
 }
 
 func (m *KObject) Name() string {
 	return m.name
 }
 
-func (m *KObject) DestroyRequest() <-chan struct{} {
+func (m *KObject) StopGoRoutineRequest() <-chan struct{} {
 	return m.obj
 }
 
-func (m *KObject) DestroyWait() ( err error ) {
+func (m *KObject) StopGoRoutineWait() ( err error ) {
 
-	m.destroyOnce.Do( func() {
+	m.stopOnce.Do( func() {
 		close(m.obj)
 	})
 
@@ -33,16 +33,16 @@ func (m *KObject) DestroyWait() ( err error ) {
 	return
 }
 
-func (m *KObject) DestroyImmediately() ( err error ) {
+func (m *KObject) StopGoRoutineImmediately() ( err error ) {
 
-	m.destroyOnce.Do( func() {
+	m.stopOnce.Do( func() {
 		close(m.obj)
 	})
 
 	return
 }
 
-func (m *KObject) AsyncDo( fn func() ) {
+func (m *KObject) StartGoRoutine( fn func() ) {
 	m.wg.Add(1)
 	go func() {
 		fn()

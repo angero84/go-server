@@ -1,8 +1,7 @@
 package logger
 
 const (
-
-	KLOG_QUEUE_CHAN_MAX = 10
+	KLOG_QUEUE_CHAN_MAX = 100
 )
 
 
