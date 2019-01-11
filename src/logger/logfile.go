@@ -11,14 +11,15 @@ import (
 )
 
 type kLogFile struct {
-	*os.File
 	*object.KObject
+	file				*os.File
 	shiftType 			KLogFileShiftType
 	rootDirectoryName	string
 	prefix		 		string
+
+	mutex 				sync.Mutex
 	curDay 				int
 	curHour 			int
-	mutex 				sync.Mutex
 }
 
 func NewKLogFile( opt *KLogFileOpt ) ( logfile *kLogFile, err error ) {
@@ -42,6 +43,8 @@ func NewKLogFile( opt *KLogFileOpt ) ( logfile *kLogFile, err error ) {
 
 	return
 }
+
+func (m *kLogFile) File() *os.File { return m.file }
 
 func (m *kLogFile) CheckFileShift() ( file *os.File, err error ) {
 
@@ -91,14 +94,14 @@ func (m *kLogFile) CheckFileShift() ( file *os.File, err error ) {
 		return
 	}
 
-	if nil != m.File {
-		fileErr := m.File.Close()
+	if nil != m.file {
+		fileErr := m.file.Close()
 		if nil != fileErr {
 			println("kLogFile.CheckFileShift() old file close error : ", fileErr.Error() )
 		}
 	}
 
-	m.File = file
+	m.file = file
 
 	m.curDay 	= day
 	m.curHour	= hour

@@ -10,8 +10,8 @@ import (
 )
 
 type kLogger struct {
-	*log.Logger
 	*object.KObject
+	logger *log.Logger
 
 	queue		chan func()
 	useQueue 	bool
@@ -20,8 +20,8 @@ type kLogger struct {
 func NewkLogger( writer *io.Writer, prefix string, useQueue bool ) ( klogger *kLogger, err error ) {
 
 	klogger = &kLogger{
-		Logger: 	log.New( *writer, prefix, log.Ltime|log.Lmicroseconds ),
 		KObject:	object.NewKObject("kLogger"),
+		logger: 	log.New( *writer, prefix, log.Ltime|log.Lmicroseconds ),
 		queue:		make(chan func(), KLOG_QUEUE_CHAN_MAX),
 		useQueue: 	useQueue,
 	}
@@ -30,6 +30,8 @@ func NewkLogger( writer *io.Writer, prefix string, useQueue bool ) ( klogger *kL
 
 	return
 }
+
+func (m *kLogger) SetOutput( writer io.Writer ) { m.logger.SetOutput(writer)}
 
 func (m *kLogger) PrintfWithLogType( logType KLogType, format string, v ...interface{}) {
 
@@ -62,6 +64,8 @@ func (m *kLogger) log( logType KLogType, queueTime *util.KTimer, format string, 
 			format = fmt.Sprintf("- %d - [FATAL] %s", elapsed, format)
 		case KLogType_Debug:
 			format = fmt.Sprintf("- %d - [DEBUG] %s", elapsed, format)
+		case KLogType_Detail:
+			format = fmt.Sprintf("- %d - [DETAIL] %s", elapsed, format)
 		default:
 			format = fmt.Sprintf("- %d - [UNKNOWN] %s", elapsed, format)
 		}
@@ -75,16 +79,18 @@ func (m *kLogger) log( logType KLogType, queueTime *util.KTimer, format string, 
 			format = "[FATAL] " + format
 		case KLogType_Debug:
 			format = "[DEBUG] " + format
+		case KLogType_Detail:
+			format = "[DETAIL] " + format
 		default:
 			format = "[UNKNOWN] " + format
 		}
 	}
 
-	m.Printf(format, v...)
+	m.logger.Printf(format, v...)
 
 }
 
-func (m *kLogger) logging() {
+func (m *kLogger) logging(params ...interface{}) {
 
 	defer func() {
 		if err := recover() ; nil != err {

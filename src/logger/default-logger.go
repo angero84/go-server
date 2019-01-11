@@ -19,10 +19,10 @@ func init() {
 		println("---> KDefaultLogger auto initialization start")
 
 		tmpKDefaultLogger, err := NewKDefaultLogger( &KDefaultLoggerOpt{
+			LogTypeDepth: 		KLogType_Debug,
 			LoggerName:			"default",
 			RootDirectoryName:	"log",
-			LogTypeDepth: 		KLogType_Debug,
-			UseQueue: 			true,
+			UseQueue: 			false,
 		})
 
 		if nil != err {
@@ -59,9 +59,9 @@ func Init( opt *KDefaultLoggerOpt ) {
 type kDefaultLogger struct {
 	*object.KObject
 	kLoggers		[]*kLogger
-	loggerName 		string
-	kLogTypeDepth	KLogType
 	kLogFile 		*kLogFile
+	kLogTypeDepth	KLogType
+	loggerName 		string
 }
 
 func NewKDefaultLogger( opt *KDefaultLoggerOpt ) ( kdlogger *kDefaultLogger, err error ) {
@@ -74,8 +74,8 @@ func NewKDefaultLogger( opt *KDefaultLoggerOpt ) ( kdlogger *kDefaultLogger, err
 	kdlogger = &kDefaultLogger{
 		KObject:		object.NewKObject("kDefaultLogger"),
 		kLoggers: 		make([]*kLogger, KLogWriterType_Max),
-		loggerName: 	opt.LoggerName,
 		kLogTypeDepth:	opt.LogTypeDepth,
+		loggerName: 	opt.LoggerName,
 	}
 
 	var klogfile *kLogFile
@@ -92,11 +92,11 @@ func NewKDefaultLogger( opt *KDefaultLoggerOpt ) ( kdlogger *kDefaultLogger, err
 
 		switch i {
 		case KLogWriterType_All:
-			logWriter = io.MultiWriter(kdlogger.kLogFile, os.Stdout)
+			logWriter = io.MultiWriter(kdlogger.kLogFile.File(), os.Stdout)
 		case KLogWriterType_Console:
 			logWriter = io.MultiWriter(os.Stdout)
 		case KLogWriterType_File:
-			logWriter = io.MultiWriter(kdlogger.kLogFile)
+			logWriter = io.MultiWriter(kdlogger.kLogFile.File())
 		default:
 			err = errors.New( fmt.Sprintf("NewKDefaultLogger() Undefined KLogWriterType : %d", i ))
 			return
@@ -207,6 +207,12 @@ func LogDebug( format string, args ...interface{} ){
 	}
 }
 
+func LogDetail( format string, args ...interface{} ){
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_All, KLogType_Detail, format, args...)
+	}
+}
+
 func LogFileInfo( format string, args ...interface{} ){
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_File, KLogType_Info, format, args...)
@@ -231,6 +237,12 @@ func LogFileDebug( format string, args ...interface{} ){
 	}
 }
 
+func LogFileDetail( format string, args ...interface{} ){
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_File, KLogType_Detail, format, args...)
+	}
+}
+
 func LogConsoleInfo( format string, args ...interface{} ){
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_Console, KLogType_Info, format, args...)
@@ -252,5 +264,11 @@ func LogConsoleFatal( format string, args ...interface{} ){
 func LogConsoleDebug( format string, args ...interface{} ){
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_Console, KLogType_Debug, format, args...)
+	}
+}
+
+func LogConsoleDetail( format string, args ...interface{} ){
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Log(KLogWriterType_Console, KLogType_Detail, format, args...)
 	}
 }

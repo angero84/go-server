@@ -1,28 +1,26 @@
 package tcp
 
 import (
-	"fmt"
 	"time"
 	"protocol"
+	log "logger"
 )
 
 type CallbackEcho struct{
 }
 
-func (m *CallbackEcho) OnConnected(c *Conn) {
-	addr := c.GetRawConn().RemoteAddr()
-	c.PutExtraData(addr)
-	fmt.Println("OnConnect:", addr)
+func (m *CallbackEcho) OnConnected(c *KConn) {
+
+	log.LogDebug( "OnConnected - [id:%d][ip:%s]", c.id, c.remoteHostIP)
 }
 
-func (m *CallbackEcho) OnMessage(c *Conn, p protocol.Packet) {
+func (m *CallbackEcho) OnMessage(c *KConn, p protocol.Packet) {
 	echoPacket := p.(*protocol.EchoPacket)
-	fmt.Printf("OnMessage:[%v] [%v]\n", echoPacket.GetLength(), string(echoPacket.GetBody()))
+	log.LogDetail("OnMessage:[%v] [%v]\n", echoPacket.GetLength(), string(echoPacket.GetBody()))
 	c.SendWithTimeout(protocol.NewEchoPacket(echoPacket.Serialize(), true), time.Second)
 
 }
 
-func (m *CallbackEcho) OnClosed(c *Conn) {
-	fmt.Println("OnClose:", c.GetExtraData())
-
+func (m *CallbackEcho) OnClosed(c *KConn) {
+	log.LogDebug( "OnClosed - [id:%d][ip:%s]", c.id, c.remoteHostIP)
 }

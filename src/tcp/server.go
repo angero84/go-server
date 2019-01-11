@@ -2,12 +2,12 @@ package tcp
 
 import (
 	"net"
-	"sync"
 	"time"
 	"protocol"
 	"fmt"
 	"sync/atomic"
 	log "logger"
+	"object"
 )
 
 type Config struct {
@@ -21,56 +21,41 @@ type Config struct {
 	ReportingIntervalTime	uint32 	`json:"ReportingIntervalTime"`
 }
 
-
-
 type Server struct {
+	*object.KObject
+	callback  		ConnEventCallback
+	protocol  		protocol.Protocol
+	config    		*Config
 	port 			uint32
-	config    		*Config         // server configuration
-	callback  		ConnEventCallback    // message callbacks in connection
-	protocol  		protocol.Protocol        // customize packet protocol
-	exitChan  		chan struct{}   // notify all goroutines to shutdown
-	waitGroup 		*sync.WaitGroup // wait for all goroutines
 
 	connSeqId		uint64
-	connManager   	*ConnManager
 }
 
 func NewServer(port uint32, config *Config, callback ConnEventCallback, protocol protocol.Protocol) ( srv *Server, err error ) {
 
-
 	srv = &Server{
-		port:			port,
-		config:    		config,
+		KObject: 		object.NewKObject("Server"),
 		callback:  		callback,
 		protocol:  		protocol,
-		exitChan:  		make(chan struct{}),
-		waitGroup: 		&sync.WaitGroup{},
-		connManager:	NewConnManager(),
+		config:    		config,
+		port:			port,
 	}
 
 	return
 }
 
-func (m *Server) OnConnected(c *Conn) {
-	addr := c.GetRawConn().RemoteAddr()
-	c.PutExtraData(addr)
-	log.LogInfo("OnConnected IP : %s, Port : %s", c.remoteHostIP, c.remotePort)
-
-	m.connManager.addConn(c)
-
+func (m *Server) OnConnected(c *KConn) {
+	log.LogDebug( "OnConnected - [id:%d][ip:%s]", c.id, c.remoteHostIP)
 }
 
-func (m *Server) OnMessage(c *Conn, p protocol.Packet) {
+func (m *Server) OnMessage(c *KConn, p protocol.Packet) {
 	echoPacket := p.(*protocol.EchoPacket)
-	fmt.Printf("OnMessage:[%v] [%v]\n", echoPacket.GetLength(), string(echoPacket.GetBody()))
+	log.LogDetail("OnMessage:[%v] [%v]\n", echoPacket.GetLength(), string(echoPacket.GetBody()))
 	c.SendWithTimeout(protocol.NewEchoPacket(echoPacket.Serialize(), true), time.Second)
-
 }
 
-func (m *Server) OnClosed(c *Conn) {
-	fmt.Println("OnClose:", c.GetExtraData())
-	m.connManager.removeConn(c)
-
+func (m *Server) OnClosed(c *KConn) {
+	log.LogDebug( "OnClosed - [id:%d][ip:%s]", c.id, c.remoteHostIP)
 }
 
 func (m *Server) Start() ( err error ) {
@@ -87,30 +72,32 @@ func (m *Server) Start() ( err error ) {
 		return
 	}
 
-	m.waitGroup.Add(1)
 	defer func() {
 		tcpListener.Close()
-		m.waitGroup.Done()
 	}()
 
-	m.asyncDo(m.reporting)
+	m.StartGoRoutine(m.reporting)
 
 	acceptTimeout := time.Duration(m.config.AcceptTimeout)*time.Millisecond
-	connOpt := ConnOpt{
-		PacketChanMaxSend:		m.config.PacketChanMaxSend,
-		PacketChanMaxReceive:	m.config.PacketChanMaxReceive,
+	connOpt := KConnOpt{
 		EventCallback: 			m,
 		Protocol: 				m.protocol,
-		NoDelay:				m.config.NoDelay,
 		KeepAliveTime: 			time.Duration(m.config.KeepAliveTime)*time.Millisecond,
-		UseLinger: 				m.config.UseLinger,
+		PacketChanMaxSend:		m.config.PacketChanMaxSend,
+		PacketChanMaxReceive:	m.config.PacketChanMaxReceive,
 		LingerTime:				m.config.LingerTime,
+		NoDelay:				m.config.NoDelay,
+		UseLinger: 				m.config.UseLinger,
+	}
+	err = connOpt.Verify()
+	if nil != err {
+		return
 	}
 
 	for {
 
 		select {
-		case <-m.exitChan:
+		case <-m.StopGoRoutineRequest():
 			return
 		default:
 		}
@@ -119,32 +106,18 @@ func (m *Server) Start() ( err error ) {
 
 		conn, acceptErr := tcpListener.AcceptTCP()
 		if nil != acceptErr {
-			println("accept error : ", acceptErr.Error())
+			log.LogWarn("Accept error : %s", acceptErr.Error())
 			continue
 		}
 
-		m.asyncDo(
-		 	func() {
-
-		 		connId 	:= m.newConnSeqId()
-				tmpConn := newConn(conn, connId, connOpt)
+		m.StartGoRoutine(
+			func(params ...interface{}) {
+				connId 	:= m.newConnSeqId()
+				tmpConn := newConn(conn, connId, &connOpt)
 				tmpConn.Start()
 			})
+
 	}
-}
-
-// Stop stops service
-func (m *Server) Stop() {
-	close(m.exitChan)
-	m.waitGroup.Wait()
-}
-
-func (m *Server) asyncDo(fn func()) {
-	m.waitGroup.Add(1)
-	go func() {
-		fn()
-		m.waitGroup.Done()
-	}()
 }
 
 func (m *Server) newConnSeqId() ( seq uint64 ) {
@@ -153,7 +126,7 @@ func (m *Server) newConnSeqId() ( seq uint64 ) {
 }
 
 
-func (m *Server) reporting () {
+func (m *Server) reporting (params ...interface{}) {
 
 	interval := time.Duration(m.config.ReportingIntervalTime)*time.Millisecond
 
@@ -165,11 +138,11 @@ func (m *Server) reporting () {
 
 	for {
 		select {
-		case <-m.exitChan:
-			println(fmt.Sprintf("reporting exitChan"))
+		case <-m.StopGoRoutineRequest():
+			log.LogDetail("Server.reporting() StopGoRoutine sensed")
 			return
 		case <-timer.C:
-			println(fmt.Sprintf("[INFO] connection count : %d", m.connManager.connCount() ))
+
 			timer.Reset(interval)
 		}
 

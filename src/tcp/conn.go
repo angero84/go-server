@@ -1,90 +1,62 @@
 package tcp
 
 import (
-	"errors"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
 	"protocol"
-	"fmt"
 	"util"
+	"object"
+	log "logger"
 )
 
-var (
-	ErrConnClosing   = errors.New("use of closed network connection")
-	ErrWriteBlocking = errors.New("write packet was blocking")
-	ErrReadBlocking  = errors.New("read packet was blocking")
-)
-
-const (
-	ConnErrClosed		int8 = iota
-	ConnErrWriteBlocked
-	ConnErrReadBlocked
-)
-
-type ConnErr struct {
-	ErrCode	int8
+type KConnErr struct {
+	ErrCode	KConnErrType
 }
 
-func (m ConnErr) Error() string {
+func (m KConnErr) Error() string {
 	switch m.ErrCode {
-	case ConnErrClosed:
+	case KConnErrType_Closed:
 		return "connection is closed"
-	case ConnErrWriteBlocked:
+	case KConnErrType_WriteBlocked:
 		return "packet write channel is blocked"
-	case ConnErrReadBlocked:
+	case KConnErrType_ReadBlocked:
 		return "packet read channel is blocked"
 	default :
 		return "unknown"
 	}
 }
 
-type ConnOpt struct {
-	PacketChanMaxSend    	uint32
-	PacketChanMaxReceive 	uint32
-	EventCallback 			ConnEventCallback
-	Protocol 				protocol.Protocol
-	NoDelay					bool
-	KeepAliveTime			time.Duration
-	UseLinger 				bool
-	LingerTime 				uint32
-}
-
-
-
 type ConnEventCallback interface {
 	// OnConnect is called when the connection was accepted,
-	OnConnected(*Conn)
+	OnConnected(*KConn)
 
 	// OnMessage is called when the connection receives a packet,
-	OnMessage(*Conn, protocol.Packet)
+	OnMessage(*KConn, protocol.Packet)
 
 	// OnClose is called when the connection closed
-	OnClosed(*Conn)
+	OnClosed(*KConn)
 }
 
-type Conn struct {
+type KConn struct {
+	*object.KObject
 	id					uint64
 	rawConn            	*net.TCPConn
-	extraData         	interface{}
 	eventCallback 		ConnEventCallback
 	protocol 			protocol.Protocol
-	waitGroup 			sync.WaitGroup
-	closeOnce         	sync.Once
-	startOnce 			sync.Once
-	closeFlag         	int32
-	chClose	        	chan struct{}
 	packetChanSend    	chan protocol.Packet
 	packetChanReceive 	chan protocol.Packet
-
 	remoteHostIP		string
 	remotePort 			string
 
-	lifeTime 			*util.KTimer
+	disconnectOnce      sync.Once
+	startOnce 			sync.Once
+	lifeTime 			util.KTimer
+	disconnectFlag      int32
 }
 
-func newConn(conn *net.TCPConn, id uint64, connOpt ConnOpt) *Conn {
+func newConn(conn *net.TCPConn, id uint64, connOpt *KConnOpt) *KConn {
 
 	host, port, err := net.SplitHostPort(conn.RemoteAddr().String())
 	if nil != err {
@@ -106,61 +78,46 @@ func newConn(conn *net.TCPConn, id uint64, connOpt ConnOpt) *Conn {
 		conn.SetLinger(-1)
 	}
 
-
-	return &Conn{
+	return &KConn{
+		KObject: 			object.NewKObject("KConn"),
 		id:					id,
 		rawConn:           	conn,
 		eventCallback:		connOpt.EventCallback,
 		protocol: 			connOpt.Protocol,
-		chClose:         	make(chan struct{}),
 		packetChanSend:    	make(chan protocol.Packet, connOpt.PacketChanMaxSend),
 		packetChanReceive: 	make(chan protocol.Packet, connOpt.PacketChanMaxReceive),
 		remoteHostIP: 		host,
 		remotePort: 		port,
-		lifeTime: 			util.NewKTimer(),
 	}
 }
 
-// GetExtraData gets the extra data from the Conn
-func (m *Conn) GetExtraData() interface{} {
-	return m.extraData
-}
+func (m *KConn) RawConn() *net.TCPConn { return m.rawConn }
 
-// PutExtraData puts the extra data with the Conn
-func (m *Conn) PutExtraData(data interface{}) {
-	m.extraData = data
-}
+func (m *KConn) Disconnect( gracefully bool ) {
 
-// GetRawConn returns the raw net.TCPConn from the Conn
-func (m *Conn) GetRawConn() *net.TCPConn {
-	return m.rawConn
-}
-
-// Close closes the connection
-func (m *Conn) Close( gracefully bool ) {
-	println("Close() in")
-	m.closeOnce.Do(
+	m.disconnectOnce.Do(
 		func() {
-			go m.close( gracefully )
-	})
+			log.LogDebug("KConn.disconnect() called - id:%d", m.id)
+			go m.disconnect( gracefully )
+		})
 }
 
-
-// Closed indicates whether or not the connection is closed
-func (m *Conn) Closed() bool {
-	return atomic.LoadInt32(&m.closeFlag) == 1
+func (m *KConn) Disconnected() bool {
+	return atomic.LoadInt32(&m.disconnectFlag) == 1
 }
 
-func (m *Conn) Send(p protocol.Packet) (err error)  {
+func (m *KConn) Send(p protocol.Packet) (err error)  {
 
-	if m.Closed() {
-		err = ConnErr{ConnErrClosed}
+	if m.Disconnected() {
+		err = KConnErr{KConnErrType_Closed}
+		log.LogDebug("[id:%d] KConn.Send() Disconnected", m.id)
 		return
 	}
 
 	defer func() {
 		if e := recover(); e != nil {
-			err = ConnErr{ConnErrClosed}
+			err = KConnErr{KConnErrType_Closed}
+			log.LogWarn("[id:%d] KConn.Send() recovered : %v", m.id, e)
 		}
 	}()
 
@@ -168,24 +125,27 @@ func (m *Conn) Send(p protocol.Packet) (err error)  {
 	case m.packetChanSend <- p:
 		return
 	default:
-		err = ConnErr{ConnErrWriteBlocked}
-		m.Close(true)
+		err = KConnErr{KConnErrType_WriteBlocked}
+		log.LogFatal("[id:%d] KConn.Send() packet push blocked", m.id)
+		m.Disconnect(true)
 		return
 	}
 
 }
 
 // AsyncWritePacket async writes a packet, this method will never block
-func (m *Conn) SendWithTimeout(p protocol.Packet, timeout time.Duration) (err error) {
+func (m *KConn) SendWithTimeout(p protocol.Packet, timeout time.Duration) (err error) {
 
-	if m.Closed() {
-		err = ConnErr{ConnErrClosed}
+	if m.Disconnected() {
+		err = KConnErr{KConnErrType_Closed}
+		log.LogDebug("[id:%d] KConn.SendWithTimeout() Disconnected", m.id)
 		return
 	}
 
 	defer func() {
 		if e := recover(); e != nil {
-			err = ConnErr{ConnErrClosed}
+			err = KConnErr{KConnErrType_Closed}
+			log.LogWarn("[id:%d] KConn.SendWithTimeout() recovered : %v", m.id, e)
 		}
 	}()
 
@@ -194,8 +154,9 @@ func (m *Conn) SendWithTimeout(p protocol.Packet, timeout time.Duration) (err er
 			case m.packetChanSend <- p:
 				return
 			default:
-				err = ConnErr{ConnErrWriteBlocked}
-				m.Close(true)
+				err = KConnErr{KConnErrType_WriteBlocked}
+				log.LogFatal("[id:%d] KConn.SendWithTimeout() packet push blocked", m.id)
+				m.Disconnect(true)
 				return
 		}
 
@@ -203,98 +164,74 @@ func (m *Conn) SendWithTimeout(p protocol.Packet, timeout time.Duration) (err er
 		select {
 			case m.packetChanSend <- p:
 				return
-			case <-m.chClose:
-				err = ConnErr{ConnErrClosed}
+			case <-m.StopGoRoutineRequest():
+				err = KConnErr{KConnErrType_Closed}
+				log.LogDetail("[id:%d] KConn.SendWithTimeout() StopGoRoutine sensed", m.id)
 				return
 			case <-time.After(timeout):
-				err = ConnErr{ConnErrWriteBlocked}
-				m.Close(true)
+				err = KConnErr{KConnErrType_WriteBlocked}
+				log.LogWarn("[id:%d] KConn.SendWithTimeout() timeout", m.id)
+				m.Disconnect(true)
 				return
 		}
 	}
 
 }
 
-func (m *Conn) Start() {
+func (m *KConn) Start() {
 
 	m.startOnce.Do(func() {
-		if nil != m.eventCallback {
-			m.eventCallback.OnConnected(m)
-		}
 
-		m.asyncDo(m.dispatching)
-		m.asyncDo(m.reading)
-		m.asyncDo(m.writing)
+		log.LogDetail("[id:%d] KConn.Start()", m.id)
+		m.eventCallback.OnConnected(m)
+
+		m.StartGoRoutine(m.dispatching)
+		m.StartGoRoutine(m.reading)
+		m.StartGoRoutine(m.writing)
 	})
 }
 
-func (m *Conn) asyncDo( fn func() ) {
+func (m *KConn) disconnect ( gracefully bool ) {
 
-	m.waitGroup.Add(1)
-	go func() {
-		fn()
-
-		println("asyncDo Done")
-		m.waitGroup.Done()
-	}()
-}
-
-func (m *Conn) close ( gracefully bool ) {
-
-	atomic.StoreInt32(&m.closeFlag, 1)
-	close(m.chClose)
-	close(m.packetChanSend)
-	close(m.packetChanReceive)
+	atomic.StoreInt32(&m.disconnectFlag, 1)
+	m.KObject.StopGoRoutineWait()
 
 	if gracefully {
+		close(m.packetChanSend)
 		for p := range m.packetChanSend {
 			if _, err := m.rawConn.Write(p.Serialize()); err != nil {
-				println(fmt.Sprintf("seqId : %d, close conn Write err: %s", m.id, err.Error() ))
+				log.LogDebug("[id:%d] KConn.disconnect() Write err : %s", m.id, err.Error())
 				break
 			}
-
-			println("close gracefully Write")
 		}
-
-		/*for p := range m.packetChanReceive {
-			m.eventCallback.OnMessage(m, p)
-			println("close gracefully OnMessage")
-		}*/
 	}
-
-	println("Close() before wait")
-	m.waitGroup.Wait()
-
-	println("Close() after wait")
 
 	m.rawConn.Close()
-	if nil != m.eventCallback {
-		m.eventCallback.OnClosed(m)
-	}
+	log.LogDetail("[id:%d] KConn.disconnect() rawConn Closed", m.id)
+	m.eventCallback.OnClosed(m)
 
 }
 
-func (m *Conn) reading() {
+func (m *KConn) reading(params ...interface{}) {
 
 	defer func() {
-		println("reading return")
-		recover()
-		m.Close(true)
+		log.LogDetail("[id:%d] KConn.reading() defered", m.id)
+		if rc := recover() ; nil != rc {
+			log.LogWarn("[id:%d] KConn.reading() recovered : %v", m.id, rc)
+		}
+		m.Disconnect(true)
 	}()
 
 	for {
 
 		select {
-			case <-m.chClose:
-				println(fmt.Sprintf("seqId : %d, reading() sensed chClose", m.id))
+			case <-m.StopGoRoutineRequest():
+				log.LogDetail("[id:%d] KConn.reading() StopGoRoutine sensed", m.id)
 				return
 			default:
-				if nil == m.protocol {
-					return
-				}
 				p, err := m.protocol.ReadPacket(m.rawConn)
 				if err != nil {
-					println(fmt.Sprintf("seqId : %d, reading() ReadPacket err : %s", m.id, err.Error() ))
+					log.LogWarn("[id:%d] KConn.reading() ReadPacket err : %s", m.id, err.Error() )
 					return
 				}
 				m.packetChanReceive <- p
@@ -303,55 +240,54 @@ func (m *Conn) reading() {
 	}
 }
 
-func (m *Conn) writing() {
+func (m *KConn) writing(params ...interface{}) {
 
 	defer func() {
-		println("writing return")
-		recover()
-		m.Close(true)
+		log.LogDetail("[id:%d] KConn.writing() defered", m.id)
+		if rc := recover() ; nil != rc {
+			log.LogWarn("[id:%d] KConn.writing() recovered : %v", m.id, rc)
+		}
+		m.Disconnect(true)
 	}()
 
 	for {
 		select {
-		case <-m.chClose:
-			println(fmt.Sprintf("seqId : %d, writing sensed chClose ", m.id))
+		case <-m.StopGoRoutineRequest():
+			log.LogDetail("[id:%d] KConn.writing() StopGoRoutine sensed", m.id)
 			return
 		case p := <-m.packetChanSend:
-			if m.Closed() {
+			if m.Disconnected() {
 				return
 			}
 			if _, err := m.rawConn.Write(p.Serialize()); err != nil {
-				println(fmt.Sprintf("seqId : %d, writing conn Write err: %s", m.id, err.Error() ))
+				log.LogWarn("[id:%d] KConn.writing() rawConn.Write err : %s", m.id, err.Error() )
 				return
 			}
 		}
 	}
 }
 
-func (m *Conn) dispatching() {
+func (m *KConn) dispatching(params ...interface{}) {
 
 	defer func() {
-		println("dispatching return")
-		recover()
-		m.Close(true)
+		log.LogDetail("[id:%d] KConn.dispatching() defered", m.id)
+		if rc := recover() ; nil != rc {
+			log.LogWarn("[id:%d] KConn.dispatching() recovered : %v", m.id, rc)
+		}
+		m.Disconnect(true)
 	}()
 
 	for {
 		select {
-		case <-m.chClose:
-			println(fmt.Sprintf("seqId : %d, dispatching sensed chClose", m.id))
+		case <-m.StopGoRoutineRequest():
+			log.LogDetail("[id:%d] KConn.dispatching() StopGoRoutine sensed", m.id)
 			return
 		case p := <-m.packetChanReceive:
-			if m.Closed() {
+			if m.Disconnected() {
 				return
 			}
 
-			if nil != m.eventCallback {
-				m.eventCallback.OnMessage(m, p)
-			} else {
-				return
-			}
-
+			m.eventCallback.OnMessage(m, p)
 		}
 	}
 }

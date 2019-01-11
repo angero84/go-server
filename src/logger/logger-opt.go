@@ -55,17 +55,17 @@ func (m *KLogFileOpt) Verify() ( err error ) {
 
 
 type KDefaultLoggerOpt struct {
+	LogTypeDepth 		KLogType
 	LoggerName 			string
 	RootDirectoryName	string
-	LogTypeDepth 		KLogType
 	UseQueue			bool
 }
 
 func (m *KDefaultLoggerOpt) SetDefault() {
+	m.LogTypeDepth			= KLogType_Fatal
 	m.LoggerName			= "default"
 	m.RootDirectoryName		= "log"
-	m.LogTypeDepth			= KLogType_Fatal
-	m.UseQueue				= true
+	m.UseQueue				= false
 }
 
 func (m *KDefaultLoggerOpt) VerifyAndSetDefault() {

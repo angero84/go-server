@@ -23,24 +23,26 @@ type serverConfig struct {
 
 func main() {
 
-	log.LogInfo("testserver started")
+	log.LogInfo("Testserver started")
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	serverConfigBytes, err := ioutil.ReadFile("configServer.json")
 	if nil != err {
-		fmt.Println("config read : ", err)
+		log.LogFatal("Cannot read config file : %s", err.Error())
 		return
 	}
 
 	serverConfig := &serverConfig{}
 	err = json.Unmarshal(serverConfigBytes, serverConfig)
 	if nil != err {
+		log.LogFatal("Failed unmarshal config file : %s", err.Error())
 		return
 	}
 
 	srv, err := tcp.NewServer(serverConfig.Port, &serverConfig.TcpConfig, &tcp.CallbackEcho{}, &protocol.EchoProtocol{})
 	if nil != err {
+		log.LogFatal("Failed create server : %s", err.Error())
 		return
 	}
 
@@ -51,5 +53,6 @@ func main() {
 	fmt.Println("Signal: ", <-chSig)
 
 	// stops service
-	srv.Stop()
+	srv.StopGoRoutineWait()
+	log.LogInfo("Main end")
 }

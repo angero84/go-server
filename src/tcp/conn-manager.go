@@ -8,18 +8,18 @@ import (
 
 type ConnManager struct {
 
-	conns 			map[uint64]*Conn
+	conns 			map[uint64]*KConn
 	connsMutex 		sync.Mutex
 }
 
 func NewConnManager() *ConnManager {
 
 	return &ConnManager{
-		conns:		make(map[uint64]*Conn),
+		conns:		make(map[uint64]*KConn),
 	}
 }
 
-func (m *ConnManager) addConn( conn *Conn ) ( err error ) {
+func (m *ConnManager) addConn( conn *KConn ) ( err error ) {
 
 	m.connsMutex.Lock()
 	defer m.connsMutex.Unlock()
@@ -33,7 +33,7 @@ func (m *ConnManager) addConn( conn *Conn ) ( err error ) {
 	return
 }
 
-func (m *ConnManager) removeConn( conn *Conn ) ( err error ) {
+func (m *ConnManager) removeConn( conn *KConn ) ( err error ) {
 
 	m.connsMutex.Lock()
 	defer m.connsMutex.Unlock()
@@ -47,7 +47,7 @@ func (m *ConnManager) removeConn( conn *Conn ) ( err error ) {
 	return
 }
 
-func (m *ConnManager) findConn( seqId uint64 ) ( conn *Conn ) {
+func (m *ConnManager) findConn( seqId uint64 ) ( conn *KConn ) {
 
 	m.connsMutex.Lock()
 	defer m.connsMutex.Unlock()

@@ -3,7 +3,7 @@
     "TcpConfig" : {
         "PacketChanMaxSend": 100,
         "PacketChanMaxReceive": 100,
-        "AcceptTimeout": 5000,
+        "AcceptTimeout": 300000,
         "NoDelay":true,
         "KeepAliveTime": 5000,
         "UseLinger":true,
