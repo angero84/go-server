@@ -1,10 +1,9 @@
 package logger
 
-
 import (
 	"fmt"
-	"log"
 	"io"
+	"log"
 	"object"
 	"util"
 )
@@ -87,14 +86,13 @@ func (m *kLogger) log( logType KLogType, queueTime *util.KTimer, format string, 
 	}
 
 	m.logger.Printf(format, v...)
-
 }
 
 func (m *kLogger) logging(params ...interface{}) {
 
 	defer func() {
 		if err := recover() ; nil != err {
-			println( fmt.Sprintf("!!!---> kLogger.logging() recovered : %v", err) )
+			MakeFatalFile("kLogger.logging() recovered : %v", err)
 		}
 	}()
 

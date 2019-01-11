@@ -6,7 +6,7 @@ import (
 	"protocol"
 	"fmt"
 	"sync/atomic"
-	log "logger"
+	klog "logger"
 	"object"
 )
 
@@ -45,17 +45,17 @@ func NewServer(port uint32, config *Config, callback ConnEventCallback, protocol
 }
 
 func (m *Server) OnConnected(c *KConn) {
-	log.LogDebug( "OnConnected - [id:%d][ip:%s]", c.id, c.remoteHostIP)
+	klog.LogDebug( "OnConnected - [id:%d][ip:%s]", c.id, c.remoteHostIP)
 }
 
 func (m *Server) OnMessage(c *KConn, p protocol.Packet) {
 	echoPacket := p.(*protocol.EchoPacket)
-	log.LogDetail("OnMessage:[%v] [%v]\n", echoPacket.GetLength(), string(echoPacket.GetBody()))
+	klog.LogDetail("OnMessage:[%v] [%v]\n", echoPacket.GetLength(), string(echoPacket.GetBody()))
 	c.SendWithTimeout(protocol.NewEchoPacket(echoPacket.Serialize(), true), time.Second)
 }
 
 func (m *Server) OnClosed(c *KConn) {
-	log.LogDebug( "OnClosed - [id:%d][ip:%s]", c.id, c.remoteHostIP)
+	klog.LogDebug( "OnClosed - [id:%d][ip:%s]", c.id, c.remoteHostIP)
 }
 
 func (m *Server) Start() ( err error ) {
@@ -106,12 +106,17 @@ func (m *Server) Start() ( err error ) {
 
 		conn, acceptErr := tcpListener.AcceptTCP()
 		if nil != acceptErr {
-			log.LogWarn("Accept error : %s", acceptErr.Error())
+			klog.LogWarn("Accept error : %s", acceptErr.Error())
 			continue
 		}
 
 		m.StartGoRoutine(
 			func(params ...interface{}) {
+				defer func() {
+					if rc := recover() ; nil != rc {
+						klog.MakeFatalFile("Server.Start() connection publishing recovered : %v", rc)
+					}
+				}()
 				connId 	:= m.newConnSeqId()
 				tmpConn := newConn(conn, connId, &connOpt)
 				tmpConn.Start()
@@ -128,6 +133,12 @@ func (m *Server) newConnSeqId() ( seq uint64 ) {
 
 func (m *Server) reporting (params ...interface{}) {
 
+	defer func() {
+		if rc := recover() ; nil != rc {
+			klog.LogFatal("Server.reporting() recovered : %v", rc)
+		}
+	}()
+
 	interval := time.Duration(m.config.ReportingIntervalTime)*time.Millisecond
 
 	if 0 >= interval {
@@ -139,7 +150,7 @@ func (m *Server) reporting (params ...interface{}) {
 	for {
 		select {
 		case <-m.StopGoRoutineRequest():
-			log.LogDetail("Server.reporting() StopGoRoutine sensed")
+			klog.LogDetail("Server.reporting() StopGoRoutine sensed")
 			return
 		case <-timer.C:
 

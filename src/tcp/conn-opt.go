@@ -5,7 +5,7 @@ import (
 	"time"
 	"fmt"
 	"errors"
-	log "logger"
+	klog "logger"
 )
 
 type KConnOpt struct {
@@ -34,7 +34,7 @@ func (m *KConnOpt) SetDefault() {
 func (m *KConnOpt) VerifyAndSetDefault() {
 	if err := m.Verify() ; nil != err {
 		m.SetDefault()
-		log.LogWarn( "KConnOpt.Verify() failed and set default : %s", err.Error())
+		klog.LogWarn( "KConnOpt.Verify() failed and set default : %s", err.Error())
 	}
 }
 
@@ -56,7 +56,7 @@ func (m *KConnOpt) Verify() ( err error ) {
 	}
 
 	if time.Duration(time.Hour*1) < m.KeepAliveTime {
-		log.LogWarn("KConnOpt.Verify() KeepAliveTime too long : %v milisec", m.KeepAliveTime )
+		klog.LogWarn("KConnOpt.Verify() KeepAliveTime too long : %v milisec", m.KeepAliveTime )
 	}
 
 	if 0 >= m.PacketChanMaxSend || 1000 < m.PacketChanMaxSend {

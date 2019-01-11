@@ -8,7 +8,7 @@ import (
 	"protocol"
 	"util"
 	"object"
-	log "logger"
+	klog "logger"
 )
 
 type KConnErr struct {
@@ -97,7 +97,7 @@ func (m *KConn) Disconnect( gracefully bool ) {
 
 	m.disconnectOnce.Do(
 		func() {
-			log.LogDebug("KConn.disconnect() called - id:%d", m.id)
+			klog.LogDebug("KConn.disconnect() called - id:%d", m.id)
 			go m.disconnect( gracefully )
 		})
 }
@@ -110,14 +110,14 @@ func (m *KConn) Send(p protocol.Packet) (err error)  {
 
 	if m.Disconnected() {
 		err = KConnErr{KConnErrType_Closed}
-		log.LogDebug("[id:%d] KConn.Send() Disconnected", m.id)
+		klog.LogDebug("[id:%d] KConn.Send() Disconnected", m.id)
 		return
 	}
 
 	defer func() {
 		if e := recover(); e != nil {
 			err = KConnErr{KConnErrType_Closed}
-			log.LogWarn("[id:%d] KConn.Send() recovered : %v", m.id, e)
+			klog.LogWarn("[id:%d] KConn.Send() recovered : %v", m.id, e)
 		}
 	}()
 
@@ -126,7 +126,7 @@ func (m *KConn) Send(p protocol.Packet) (err error)  {
 		return
 	default:
 		err = KConnErr{KConnErrType_WriteBlocked}
-		log.LogFatal("[id:%d] KConn.Send() packet push blocked", m.id)
+		klog.LogFatal("[id:%d] KConn.Send() packet push blocked", m.id)
 		m.Disconnect(true)
 		return
 	}
@@ -138,14 +138,14 @@ func (m *KConn) SendWithTimeout(p protocol.Packet, timeout time.Duration) (err e
 
 	if m.Disconnected() {
 		err = KConnErr{KConnErrType_Closed}
-		log.LogDebug("[id:%d] KConn.SendWithTimeout() Disconnected", m.id)
+		klog.LogDebug("[id:%d] KConn.SendWithTimeout() Disconnected", m.id)
 		return
 	}
 
 	defer func() {
 		if e := recover(); e != nil {
 			err = KConnErr{KConnErrType_Closed}
-			log.LogWarn("[id:%d] KConn.SendWithTimeout() recovered : %v", m.id, e)
+			klog.LogWarn("[id:%d] KConn.SendWithTimeout() recovered : %v", m.id, e)
 		}
 	}()
 
@@ -155,7 +155,7 @@ func (m *KConn) SendWithTimeout(p protocol.Packet, timeout time.Duration) (err e
 				return
 			default:
 				err = KConnErr{KConnErrType_WriteBlocked}
-				log.LogFatal("[id:%d] KConn.SendWithTimeout() packet push blocked", m.id)
+				klog.LogFatal("[id:%d] KConn.SendWithTimeout() packet push blocked", m.id)
 				m.Disconnect(true)
 				return
 		}
@@ -166,11 +166,11 @@ func (m *KConn) SendWithTimeout(p protocol.Packet, timeout time.Duration) (err e
 				return
 			case <-m.StopGoRoutineRequest():
 				err = KConnErr{KConnErrType_Closed}
-				log.LogDetail("[id:%d] KConn.SendWithTimeout() StopGoRoutine sensed", m.id)
+				klog.LogDetail("[id:%d] KConn.SendWithTimeout() StopGoRoutine sensed", m.id)
 				return
 			case <-time.After(timeout):
 				err = KConnErr{KConnErrType_WriteBlocked}
-				log.LogWarn("[id:%d] KConn.SendWithTimeout() timeout", m.id)
+				klog.LogFatal("[id:%d] KConn.SendWithTimeout() timeout", m.id)
 				m.Disconnect(true)
 				return
 		}
@@ -182,7 +182,7 @@ func (m *KConn) Start() {
 
 	m.startOnce.Do(func() {
 
-		log.LogDetail("[id:%d] KConn.Start()", m.id)
+		klog.LogDetail("[id:%d] KConn.Start()", m.id)
 		m.eventCallback.OnConnected(m)
 
 		m.StartGoRoutine(m.dispatching)
@@ -193,6 +193,12 @@ func (m *KConn) Start() {
 
 func (m *KConn) disconnect ( gracefully bool ) {
 
+	defer func() {
+		if rc := recover() ; nil != rc {
+			klog.MakeFatalFile("[id:%d] KConn.disconnect() recovered : %v", m.id, rc)
+		}
+	}()
+
 	atomic.StoreInt32(&m.disconnectFlag, 1)
 	m.KObject.StopGoRoutineWait()
 
@@ -200,14 +206,14 @@ func (m *KConn) disconnect ( gracefully bool ) {
 		close(m.packetChanSend)
 		for p := range m.packetChanSend {
 			if _, err := m.rawConn.Write(p.Serialize()); err != nil {
-				log.LogDebug("[id:%d] KConn.disconnect() Write err : %s", m.id, err.Error())
+				klog.LogWarn("[id:%d] KConn.disconnect() Write err : %s", m.id, err.Error())
 				break
 			}
 		}
 	}
 
 	m.rawConn.Close()
-	log.LogDetail("[id:%d] KConn.disconnect() rawConn Closed", m.id)
+	klog.LogDetail("[id:%d] KConn.disconnect() rawConn Closed", m.id)
 	m.eventCallback.OnClosed(m)
 
 }
@@ -215,9 +221,9 @@ func (m *KConn) disconnect ( gracefully bool ) {
 func (m *KConn) reading(params ...interface{}) {
 
 	defer func() {
-		log.LogDetail("[id:%d] KConn.reading() defered", m.id)
+		klog.LogDetail("[id:%d] KConn.reading() defered", m.id)
 		if rc := recover() ; nil != rc {
-			log.LogWarn("[id:%d] KConn.reading() recovered : %v", m.id, rc)
+			klog.LogWarn("[id:%d] KConn.reading() recovered : %v", m.id, rc)
 		}
 		m.Disconnect(true)
 	}()
@@ -226,12 +232,12 @@ func (m *KConn) reading(params ...interface{}) {
 
 		select {
 			case <-m.StopGoRoutineRequest():
-				log.LogDetail("[id:%d] KConn.reading() StopGoRoutine sensed", m.id)
+				klog.LogDetail("[id:%d] KConn.reading() StopGoRoutine sensed", m.id)
 				return
 			default:
 				p, err := m.protocol.ReadPacket(m.rawConn)
 				if err != nil {
-					log.LogWarn("[id:%d] KConn.reading() ReadPacket err : %s", m.id, err.Error() )
+					klog.LogDebug("[id:%d] KConn.reading() ReadPacket err : %s", m.id, err.Error() )
 					return
 				}
 				m.packetChanReceive <- p
@@ -243,9 +249,9 @@ func (m *KConn) reading(params ...interface{}) {
 func (m *KConn) writing(params ...interface{}) {
 
 	defer func() {
-		log.LogDetail("[id:%d] KConn.writing() defered", m.id)
+		klog.LogDetail("[id:%d] KConn.writing() defered", m.id)
 		if rc := recover() ; nil != rc {
-			log.LogWarn("[id:%d] KConn.writing() recovered : %v", m.id, rc)
+			klog.LogWarn("[id:%d] KConn.writing() recovered : %v", m.id, rc)
 		}
 		m.Disconnect(true)
 	}()
@@ -253,14 +259,14 @@ func (m *KConn) writing(params ...interface{}) {
 	for {
 		select {
 		case <-m.StopGoRoutineRequest():
-			log.LogDetail("[id:%d] KConn.writing() StopGoRoutine sensed", m.id)
+			klog.LogDetail("[id:%d] KConn.writing() StopGoRoutine sensed", m.id)
 			return
 		case p := <-m.packetChanSend:
 			if m.Disconnected() {
 				return
 			}
 			if _, err := m.rawConn.Write(p.Serialize()); err != nil {
-				log.LogWarn("[id:%d] KConn.writing() rawConn.Write err : %s", m.id, err.Error() )
+				klog.LogDebug("[id:%d] KConn.writing() rawConn.Write err : %s", m.id, err.Error() )
 				return
 			}
 		}
@@ -270,9 +276,9 @@ func (m *KConn) writing(params ...interface{}) {
 func (m *KConn) dispatching(params ...interface{}) {
 
 	defer func() {
-		log.LogDetail("[id:%d] KConn.dispatching() defered", m.id)
+		klog.LogDetail("[id:%d] KConn.dispatching() defered", m.id)
 		if rc := recover() ; nil != rc {
-			log.LogWarn("[id:%d] KConn.dispatching() recovered : %v", m.id, rc)
+			klog.LogWarn("[id:%d] KConn.dispatching() recovered : %v", m.id, rc)
 		}
 		m.Disconnect(true)
 	}()
@@ -280,7 +286,7 @@ func (m *KConn) dispatching(params ...interface{}) {
 	for {
 		select {
 		case <-m.StopGoRoutineRequest():
-			log.LogDetail("[id:%d] KConn.dispatching() StopGoRoutine sensed", m.id)
+			klog.LogDetail("[id:%d] KConn.dispatching() StopGoRoutine sensed", m.id)
 			return
 		case p := <-m.packetChanReceive:
 			if m.Disconnected() {

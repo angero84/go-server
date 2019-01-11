@@ -10,10 +10,9 @@ import (
 	"syscall"
 	"tcp"
 
-
 	"encoding/json"
 
-	log "logger"
+	klog "logger"
 )
 
 type serverConfig struct {
@@ -23,26 +22,28 @@ type serverConfig struct {
 
 func main() {
 
-	log.LogInfo("Testserver started")
+
+
+	klog.LogInfo("Testserver started")
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	serverConfigBytes, err := ioutil.ReadFile("configServer.json")
 	if nil != err {
-		log.LogFatal("Cannot read config file : %s", err.Error())
+		klog.LogWarn("Cannot read config file : %s", err.Error())
 		return
 	}
 
 	serverConfig := &serverConfig{}
 	err = json.Unmarshal(serverConfigBytes, serverConfig)
 	if nil != err {
-		log.LogFatal("Failed unmarshal config file : %s", err.Error())
+		klog.LogWarn("Failed unmarshal config file : %s", err.Error())
 		return
 	}
 
 	srv, err := tcp.NewServer(serverConfig.Port, &serverConfig.TcpConfig, &tcp.CallbackEcho{}, &protocol.EchoProtocol{})
 	if nil != err {
-		log.LogFatal("Failed create server : %s", err.Error())
+		klog.LogWarn("Failed create server : %s", err.Error())
 		return
 	}
 
@@ -54,5 +55,5 @@ func main() {
 
 	// stops service
 	srv.StopGoRoutineWait()
-	log.LogInfo("Main end")
+	klog.LogInfo("Main end")
 }

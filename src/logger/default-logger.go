@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"log"
 	"sync"
 	"io"
 	"os"
@@ -175,6 +176,17 @@ func (m *kDefaultLogger) checkLogFile() {
 	} else if nil != err {
 		println(fmt.Sprintf("!!!---> kDefaultLogger.checkLogFile() err : %s", err.Error()))
 	}
+}
+
+func MakeFatalFile(format string, v ...interface{}) {
+
+	file, err := os.OpenFile("fatal.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666 )
+	if nil != err {
+		return
+	}
+	defer file.Close()
+	log.SetOutput(file)
+	log.Fatalln(fmt.Sprintf(format, v...))
 }
 
 func Log( writerType KLogWriterType, logType KLogType, format string, args ...interface{} ) {
