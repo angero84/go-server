@@ -44,20 +44,6 @@ func NewServer(port uint32, config *Config, callback ConnEventCallback, protocol
 	return
 }
 
-func (m *Server) OnConnected(c *KConn) {
-	klog.LogDebug( "OnConnected - [id:%d][ip:%s]", c.id, c.remoteHostIP)
-}
-
-func (m *Server) OnMessage(c *KConn, p protocol.Packet) {
-	echoPacket := p.(*protocol.EchoPacket)
-	klog.LogDetail("OnMessage:[%v] [%v]\n", echoPacket.GetLength(), string(echoPacket.GetBody()))
-	c.SendWithTimeout(protocol.NewEchoPacket(echoPacket.Serialize(), true), time.Second)
-}
-
-func (m *Server) OnClosed(c *KConn) {
-	klog.LogDebug( "OnClosed - [id:%d][ip:%s]", c.id, c.remoteHostIP)
-}
-
 func (m *Server) Start() ( err error ) {
 
 	var tcpAddr *net.TCPAddr
@@ -76,11 +62,12 @@ func (m *Server) Start() ( err error ) {
 		tcpListener.Close()
 	}()
 
+
 	m.StartGoRoutine(m.reporting)
 
 	acceptTimeout := time.Duration(m.config.AcceptTimeout)*time.Millisecond
 	connOpt := KConnOpt{
-		EventCallback: 			m,
+		EventCallback: 			m.callback,
 		Protocol: 				m.protocol,
 		KeepAliveTime: 			time.Duration(m.config.KeepAliveTime)*time.Millisecond,
 		PacketChanMaxSend:		m.config.PacketChanMaxSend,
@@ -111,7 +98,7 @@ func (m *Server) Start() ( err error ) {
 		}
 
 		m.StartGoRoutine(
-			func(params ...interface{}) {
+			func() {
 				defer func() {
 					if rc := recover() ; nil != rc {
 						klog.MakeFatalFile("Server.Start() connection publishing recovered : %v", rc)
@@ -131,7 +118,7 @@ func (m *Server) newConnSeqId() ( seq uint64 ) {
 }
 
 
-func (m *Server) reporting (params ...interface{}) {
+func (m *Server) reporting () {
 
 	defer func() {
 		if rc := recover() ; nil != rc {

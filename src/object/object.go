@@ -42,7 +42,7 @@ func (m *KObject) StopGoRoutineImmediately() ( err error ) {
 	return
 }
 
-func (m *KObject) StartGoRoutine( fn func( params ...interface{}) ) {
+func (m *KObject) StartGoRoutine( fn func() ) {
 	m.wg.Add(1)
 	go func() {
 		fn()

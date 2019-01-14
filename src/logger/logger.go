@@ -20,7 +20,7 @@ func NewkLogger( writer *io.Writer, prefix string, useQueue bool ) ( klogger *kL
 
 	klogger = &kLogger{
 		KObject:	object.NewKObject("kLogger"),
-		logger: 	log.New( *writer, prefix, log.Ltime|log.Lmicroseconds ),
+		logger: 	log.New( *writer, prefix, log.Ldate|log.Ltime|log.Lmicroseconds ),
 		queue:		make(chan func(), KLOG_QUEUE_CHAN_MAX),
 		useQueue: 	useQueue,
 	}
@@ -88,7 +88,7 @@ func (m *kLogger) log( logType KLogType, queueTime *util.KTimer, format string, 
 	m.logger.Printf(format, v...)
 }
 
-func (m *kLogger) logging(params ...interface{}) {
+func (m *kLogger) logging() {
 
 	defer func() {
 		if err := recover() ; nil != err {

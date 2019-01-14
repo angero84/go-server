@@ -41,7 +41,9 @@ func main() {
 		return
 	}
 
-	srv, err := tcp.NewServer(serverConfig.Port, &serverConfig.TcpConfig, &tcp.CallbackEcho{}, &protocol.EchoProtocol{})
+	handler := &tcp.CallbackEcho{}
+
+	srv, err := tcp.NewServer(serverConfig.Port, &serverConfig.TcpConfig, handler, &protocol.EchoProtocol{})
 	if nil != err {
 		klog.LogWarn("Failed create server : %s", err.Error())
 		return

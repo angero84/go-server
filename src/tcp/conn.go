@@ -218,7 +218,7 @@ func (m *KConn) disconnect ( gracefully bool ) {
 
 }
 
-func (m *KConn) reading(params ...interface{}) {
+func (m *KConn) reading() {
 
 	defer func() {
 		klog.LogDetail("[id:%d] KConn.reading() defered", m.id)
@@ -246,7 +246,7 @@ func (m *KConn) reading(params ...interface{}) {
 	}
 }
 
-func (m *KConn) writing(params ...interface{}) {
+func (m *KConn) writing() {
 
 	defer func() {
 		klog.LogDetail("[id:%d] KConn.writing() defered", m.id)
@@ -273,7 +273,7 @@ func (m *KConn) writing(params ...interface{}) {
 	}
 }
 
-func (m *KConn) dispatching(params ...interface{}) {
+func (m *KConn) dispatching() {
 
 	defer func() {
 		klog.LogDetail("[id:%d] KConn.dispatching() defered", m.id)
