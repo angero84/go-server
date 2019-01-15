@@ -1,16 +1,17 @@
 package tcp
 
 import (
-	"protocol"
 	"time"
 	"fmt"
 	"errors"
-	klog "logger"
+
+	"protocol"
+	klog 		"logger"
 )
 
 type KConnOpt struct {
-	EventCallback 			ConnEventCallback
-	Protocol 				protocol.Protocol
+	Handler		 			IKConnHandler
+	Protocol 				protocol.IKProtocol
 	KeepAliveTime			time.Duration
 	PacketChanMaxSend    	uint32
 	PacketChanMaxReceive 	uint32
@@ -21,8 +22,8 @@ type KConnOpt struct {
 }
 
 func (m *KConnOpt) SetDefault() {
-	m.EventCallback 		= &CallbackEcho{}
-	m.Protocol 				= &protocol.EchoProtocol{}
+	m.Handler 				= nil
+	m.Protocol 				= nil
 	m.KeepAliveTime			= time.Millisecond*2000
 	m.PacketChanMaxSend		= 100
 	m.PacketChanMaxReceive	= 100
@@ -40,8 +41,8 @@ func (m *KConnOpt) VerifyAndSetDefault() {
 
 func (m *KConnOpt) Verify() ( err error ) {
 
-	if nil == m.EventCallback {
-		err = errors.New("KConnOpt.Verify() EventCallback is nil ")
+	if nil == m.Handler {
+		err = errors.New("KConnOpt.Verify() Handler is nil ")
 		return
 	}
 

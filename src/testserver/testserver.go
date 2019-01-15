@@ -5,19 +5,19 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
-	"protocol"
 	"runtime"
 	"syscall"
-	"tcp"
-
 	"encoding/json"
 
-	klog "logger"
+	ktcp 		"tcp"
+	kprotocol	"protocol"
+	klog 		"logger"
+	khandler	"handler"
 )
 
 type serverConfig struct {
 	Port 			uint32 			`json:"Port"`
-	TcpConfig		tcp.Config 		`json:"TcpConfig"`
+	TcpConfig		ktcp.Config 	`json:"TcpConfig"`
 }
 
 func main() {
@@ -41,9 +41,10 @@ func main() {
 		return
 	}
 
-	handler := &tcp.CallbackEcho{}
+	handler := khandler.NewKConnHandlerEcho()
+	protocol := &kprotocol.KProtocolEcho{}
 
-	srv, err := tcp.NewServer(serverConfig.Port, &serverConfig.TcpConfig, handler, &protocol.EchoProtocol{})
+	srv, err := ktcp.NewServer(serverConfig.Port, &serverConfig.TcpConfig, handler, protocol)
 	if nil != err {
 		klog.LogWarn("Failed create server : %s", err.Error())
 		return

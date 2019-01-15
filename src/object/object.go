@@ -15,13 +15,8 @@ func NewKObject(name string) *KObject {
 	return &KObject{name:name, obj:make(chan struct{})}
 }
 
-func (m *KObject) Name() string {
-	return m.name
-}
-
-func (m *KObject) StopGoRoutineRequest() <-chan struct{} {
-	return m.obj
-}
+func (m *KObject) Name() 				string 				{ return m.name }
+func (m *KObject) StopGoRoutineRequest() <-chan struct{}	{ return m.obj }
 
 func (m *KObject) StopGoRoutineWait() ( err error ) {
 

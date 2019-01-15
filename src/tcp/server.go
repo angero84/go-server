@@ -3,11 +3,12 @@ package tcp
 import (
 	"net"
 	"time"
-	"protocol"
 	"fmt"
 	"sync/atomic"
-	klog "logger"
+
+	klog 		"logger"
 	"object"
+	"protocol"
 )
 
 type Config struct {
@@ -23,19 +24,19 @@ type Config struct {
 
 type Server struct {
 	*object.KObject
-	callback  		ConnEventCallback
-	protocol  		protocol.Protocol
+	handler  		IKConnHandler
+	protocol  		protocol.IKProtocol
 	config    		*Config
 	port 			uint32
 
 	connSeqId		uint64
 }
 
-func NewServer(port uint32, config *Config, callback ConnEventCallback, protocol protocol.Protocol) ( srv *Server, err error ) {
+func NewServer(port uint32, config *Config, handler IKConnHandler, protocol protocol.IKProtocol) ( srv *Server, err error ) {
 
 	srv = &Server{
 		KObject: 		object.NewKObject("Server"),
-		callback:  		callback,
+		handler:  		handler,
 		protocol:  		protocol,
 		config:    		config,
 		port:			port,
@@ -67,7 +68,7 @@ func (m *Server) Start() ( err error ) {
 
 	acceptTimeout := time.Duration(m.config.AcceptTimeout)*time.Millisecond
 	connOpt := KConnOpt{
-		EventCallback: 			m.callback,
+		Handler:	 			m.handler,
 		Protocol: 				m.protocol,
 		KeepAliveTime: 			time.Duration(m.config.KeepAliveTime)*time.Millisecond,
 		PacketChanMaxSend:		m.config.PacketChanMaxSend,

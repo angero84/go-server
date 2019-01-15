@@ -5,10 +5,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
 	"protocol"
 	"util"
 	"object"
-	klog "logger"
+	klog 		"logger"
 )
 
 type KConnErr struct {
@@ -28,25 +29,14 @@ func (m KConnErr) Error() string {
 	}
 }
 
-type ConnEventCallback interface {
-	// OnConnect is called when the connection was accepted,
-	OnConnected(*KConn)
-
-	// OnMessage is called when the connection receives a packet,
-	OnMessage(*KConn, protocol.Packet)
-
-	// OnClose is called when the connection closed
-	OnClosed(*KConn)
-}
-
 type KConn struct {
 	*object.KObject
 	id					uint64
 	rawConn            	*net.TCPConn
-	eventCallback 		ConnEventCallback
-	protocol 			protocol.Protocol
-	packetChanSend    	chan protocol.Packet
-	packetChanReceive 	chan protocol.Packet
+	handler 			IKConnHandler
+	protocol 			protocol.IKProtocol
+	packetChanSend    	chan protocol.IKPacket
+	packetChanReceive 	chan protocol.IKPacket
 	remoteHostIP		string
 	remotePort 			string
 
@@ -82,16 +72,20 @@ func newConn(conn *net.TCPConn, id uint64, connOpt *KConnOpt) *KConn {
 		KObject: 			object.NewKObject("KConn"),
 		id:					id,
 		rawConn:           	conn,
-		eventCallback:		connOpt.EventCallback,
+		handler:			connOpt.Handler,
 		protocol: 			connOpt.Protocol,
-		packetChanSend:    	make(chan protocol.Packet, connOpt.PacketChanMaxSend),
-		packetChanReceive: 	make(chan protocol.Packet, connOpt.PacketChanMaxReceive),
+		packetChanSend:    	make(chan protocol.IKPacket, connOpt.PacketChanMaxSend),
+		packetChanReceive: 	make(chan protocol.IKPacket, connOpt.PacketChanMaxReceive),
 		remoteHostIP: 		host,
 		remotePort: 		port,
 	}
 }
 
-func (m *KConn) RawConn() *net.TCPConn { return m.rawConn }
+func (m *KConn) ID() 				uint64 			{ return m.id }
+func (m *KConn) RawConn() 			*net.TCPConn 	{ return m.rawConn }
+func (m *KConn) RemoteHostIP()		string 			{ return m.remoteHostIP }
+func (m *KConn) RemoteHostPort()	string 			{ return m.remotePort }
+
 
 func (m *KConn) Disconnect( gracefully bool ) {
 
@@ -106,7 +100,7 @@ func (m *KConn) Disconnected() bool {
 	return atomic.LoadInt32(&m.disconnectFlag) == 1
 }
 
-func (m *KConn) Send(p protocol.Packet) (err error)  {
+func (m *KConn) Send(p protocol.IKPacket) (err error)  {
 
 	if m.Disconnected() {
 		err = KConnErr{KConnErrType_Closed}
@@ -134,7 +128,7 @@ func (m *KConn) Send(p protocol.Packet) (err error)  {
 }
 
 // AsyncWritePacket async writes a packet, this method will never block
-func (m *KConn) SendWithTimeout(p protocol.Packet, timeout time.Duration) (err error) {
+func (m *KConn) SendWithTimeout(p protocol.IKPacket, timeout time.Duration) (err error) {
 
 	if m.Disconnected() {
 		err = KConnErr{KConnErrType_Closed}
@@ -183,7 +177,9 @@ func (m *KConn) Start() {
 	m.startOnce.Do(func() {
 
 		klog.LogDetail("[id:%d] KConn.Start()", m.id)
-		m.eventCallback.OnConnected(m)
+		if nil != m.handler {
+			m.handler.OnConnected(m)
+		}
 
 		m.StartGoRoutine(m.dispatching)
 		m.StartGoRoutine(m.reading)
@@ -214,7 +210,9 @@ func (m *KConn) disconnect ( gracefully bool ) {
 
 	m.rawConn.Close()
 	klog.LogDetail("[id:%d] KConn.disconnect() rawConn Closed", m.id)
-	m.eventCallback.OnClosed(m)
+	if nil != m.handler {
+		m.handler.OnDisconnected(m)
+	}
 
 }
 
@@ -235,7 +233,10 @@ func (m *KConn) reading() {
 				klog.LogDetail("[id:%d] KConn.reading() StopGoRoutine sensed", m.id)
 				return
 			default:
-				p, err := m.protocol.ReadPacket(m.rawConn)
+				if nil == m.protocol {
+					return
+				}
+				p, err := m.protocol.ReadKPacket(m.rawConn)
 				if err != nil {
 					klog.LogDebug("[id:%d] KConn.reading() ReadPacket err : %s", m.id, err.Error() )
 					return
@@ -293,7 +294,9 @@ func (m *KConn) dispatching() {
 				return
 			}
 
-			m.eventCallback.OnMessage(m, p)
+			if nil != m.handler {
+				m.handler.OnMessage(m, p)
+			}
 		}
 	}
 }

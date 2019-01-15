@@ -1,32 +1,19 @@
 package protocol
 
-
 import (
 	"encoding/binary"
 	"errors"
 	"io"
 	"net"
-
 )
 
-type EchoPacket struct {
+type KPacketEcho struct {
 	buff []byte
 }
 
-func (m *EchoPacket) Serialize() []byte {
-	return m.buff
-}
+func NewKPacketEcho(buff []byte, hasLengthField bool) *KPacketEcho {
 
-func (m *EchoPacket) GetLength() uint32 {
-	return binary.BigEndian.Uint32(m.buff[0:4])
-}
-
-func (m *EchoPacket) GetBody() []byte {
-	return m.buff[4:]
-}
-
-func NewEchoPacket(buff []byte, hasLengthField bool) *EchoPacket {
-	p := &EchoPacket{}
+	p := &KPacketEcho{}
 
 	if hasLengthField {
 		p.buff = buff
@@ -40,10 +27,17 @@ func NewEchoPacket(buff []byte, hasLengthField bool) *EchoPacket {
 	return p
 }
 
-type EchoProtocol struct {
+func (m *KPacketEcho) PacketID() 	uint32 	{ return 0 }
+func (m *KPacketEcho) Buffer() 		[]byte 	{ return m.buff }
+func (m *KPacketEcho) Body() 		[]byte 	{ return m.buff[4:] }
+func (m *KPacketEcho) Length() 		uint32 	{ return binary.BigEndian.Uint32(m.buff[0:4]) }
+func (m *KPacketEcho) Serialize() 	[]byte 	{ return m.buff }
+
+
+type KProtocolEcho struct {
 }
 
-func (m *EchoProtocol) ReadPacket(conn *net.TCPConn) (Packet, error) {
+func (m *KProtocolEcho) ReadKPacket(conn *net.TCPConn) (IKPacket, error) {
 
 	var (
 		lengthBytes []byte = make([]byte, 4)
@@ -66,5 +60,5 @@ func (m *EchoProtocol) ReadPacket(conn *net.TCPConn) (Packet, error) {
 		return nil, err
 	}
 
-	return NewEchoPacket(buff, true), nil
+	return NewKPacketEcho(buff, true), nil
 }
