@@ -1,13 +1,12 @@
 package klogger
 
 const (
-	KLOG_QUEUE_CHAN_MAX 		= 100
+	KLOG_QUEUE_CHAN_MAX			= 100
 )
-
 
 type KLogType int8
 const (
-	KLogType_Info 				KLogType = iota
+	KLogType_Info				KLogType = iota
 	KLogType_Warn
 	KLogType_Fatal
 	KLogType_Debug

@@ -3,8 +3,8 @@ package kprotocol
 import "encoding/json"
 
 type ProtocolJsonRequestLogin struct {
-	UserID 			string
-	Password 		string
+	UserID			string
+	Password		string
 }
 
 func (m *ProtocolJsonRequestLogin) Unmarshal(p IKPacket) (err error) {

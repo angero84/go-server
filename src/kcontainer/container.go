@@ -7,9 +7,8 @@ import (
 )
 
 type KContainer struct {
-
 	objects			map[uint64]IKContainer
-	mutex	 		sync.Mutex
+	mutex			sync.Mutex
 }
 
 func NewKContainer() *KContainer {
@@ -19,7 +18,7 @@ func NewKContainer() *KContainer {
 	}
 }
 
-func (m *KContainer) Add( object IKContainer ) ( err error ) {
+func (m *KContainer) Add(object IKContainer) (err error) {
 
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -33,7 +32,7 @@ func (m *KContainer) Add( object IKContainer ) ( err error ) {
 	return
 }
 
-func (m *KContainer) Remove( object IKContainer ) ( err error ) {
+func (m *KContainer) Remove(object IKContainer) (err error) {
 
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -47,21 +46,20 @@ func (m *KContainer) Remove( object IKContainer ) ( err error ) {
 	return
 }
 
-func (m *KContainer) Find( id uint64 ) ( object IKContainer ) {
+func (m *KContainer) Find(id uint64) (object IKContainer) {
 
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
 	object, _ = m.objects[id]
-
 	return
 }
 
-func (m *KContainer) Count() ( count int ) {
+func (m *KContainer) Count() (count int) {
+
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
 	count = len(m.objects)
-
 	return
 }

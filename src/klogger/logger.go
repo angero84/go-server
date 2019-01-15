@@ -11,19 +11,19 @@ import (
 
 type kLogger struct {
 	*kobject.KObject
-	logger *log.Logger
+	logger		*log.Logger
 
 	queue		chan func()
-	useQueue 	bool
+	useQueue	bool
 }
 
-func NewkLogger( writer *io.Writer, prefix string, useQueue bool ) ( klogger *kLogger, err error ) {
+func NewkLogger(writer *io.Writer, prefix string, useQueue bool) (klogger *kLogger, err error) {
 
 	klogger = &kLogger{
-		KObject:  kobject.NewKObject("kLogger"),
-		logger:   log.New( *writer, prefix, log.Ldate|log.Ltime|log.Lmicroseconds ),
-		queue:    make(chan func(), KLOG_QUEUE_CHAN_MAX),
-		useQueue: useQueue,
+		KObject:	kobject.NewKObject("kLogger"),
+		logger:		log.New(*writer, prefix, log.Ldate|log.Ltime|log.Lmicroseconds),
+		queue:		make(chan func(), KLOG_QUEUE_CHAN_MAX),
+		useQueue:	useQueue,
 	}
 
 	klogger.StartGoRoutine(klogger.logging)
@@ -31,13 +31,13 @@ func NewkLogger( writer *io.Writer, prefix string, useQueue bool ) ( klogger *kL
 	return
 }
 
-func (m *kLogger) SetOutput( writer io.Writer ) { m.logger.SetOutput(writer)}
+func (m *kLogger) SetOutput(writer io.Writer) { m.logger.SetOutput(writer) }
 
-func (m *kLogger) PrintfWithLogType( logType KLogType, format string, v ...interface{}) {
+func (m *kLogger) PrintfWithLogType(logType KLogType, format string, v ...interface{}) {
 
 	defer func() {
 		if rc := recover() ; nil != rc {
-			println( fmt.Sprintf("!!!---> kLogger.PrintfWithLogType() recovered : %v", rc) )
+			println(fmt.Sprintf("!!!---> kLogger.PrintfWithLogType() recovered : %v", rc))
 		}
 	}()
 
@@ -51,7 +51,7 @@ func (m *kLogger) PrintfWithLogType( logType KLogType, format string, v ...inter
 	}
 }
 
-func (m *kLogger) log( logType KLogType, queueTime *kutil.KTimer, format string, v ...interface{} ) {
+func (m *kLogger) log(logType KLogType, queueTime *kutil.KTimer, format string, v ...interface{}) {
 
 	if m.useQueue && nil != queueTime {
 		elapsed := queueTime.ElapsedMilisec()

@@ -19,6 +19,7 @@ func (m *KConnHandlerEcho) OnConnected(c *ktcp.KConn) {
 }
 
 func (m *KConnHandlerEcho) OnMessage(c *ktcp.KConn, p kprotocol.IKPacket) {
+
 	echoPacket := p.(*kprotocol.KPacketEcho)
 	klog.LogDetail("OnMessage:[%v] [%v]\n", echoPacket.Length(), string(echoPacket.Body()))
 	c.Send(kprotocol.NewKPacketEcho(echoPacket.Serialize(), true))
@@ -26,5 +27,6 @@ func (m *KConnHandlerEcho) OnMessage(c *ktcp.KConn, p kprotocol.IKPacket) {
 }
 
 func (m *KConnHandlerEcho) OnDisconnected(c *ktcp.KConn) {
+
 	klog.LogDebug( "OnDisconnected - [id:%d][ip:%s]", c.ID(), c.RemoteHostIP())
 }

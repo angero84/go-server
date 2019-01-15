@@ -16,15 +16,15 @@ var instanceKDefaultLoggerOnce sync.Once
 
 func init() {
 
-	instanceKDefaultLoggerOnce.Do( func() {
+	instanceKDefaultLoggerOnce.Do(func() {
 
 		println("---> KDefaultLogger auto initialization start")
 
-		tmpKDefaultLogger, err := NewKDefaultLogger( &KDefaultLoggerOpt{
-			LogTypeDepth: 		KLogType_Debug,
+		tmpKDefaultLogger, err := NewKDefaultLogger(&KDefaultLoggerOpt{
+			LogTypeDepth:		KLogType_Debug,
 			LoggerName:			"default",
 			RootDirectoryName:	"log",
-			UseQueue: 			false,
+			UseQueue:			false,
 		})
 
 		if nil != err {
@@ -35,13 +35,12 @@ func init() {
 		instanceKDefaultLogger = tmpKDefaultLogger
 
 		println("---> KDefaultLogger initialized")
-
 	})
 }
 
-func Init( opt *KDefaultLoggerOpt ) {
+func Init(opt *KDefaultLoggerOpt) {
 
-	instanceKDefaultLoggerOnce.Do( func() {
+	instanceKDefaultLoggerOnce.Do(func() {
 
 		println("---> KDefaultLogger initialization start")
 
@@ -54,19 +53,18 @@ func Init( opt *KDefaultLoggerOpt ) {
 		instanceKDefaultLogger = tmpDefaultLogger
 
 		println("---> KDefaultLogger initialized")
-
 	})
 }
 
 type kDefaultLogger struct {
 	*kobject.KObject
 	kLoggers		[]*kLogger
-	kLogFile 		*kLogFile
+	kLogFile		*kLogFile
 	kLogTypeDepth	KLogType
-	loggerName 		string
+	loggerName		string
 }
 
-func NewKDefaultLogger( opt *KDefaultLoggerOpt ) ( kdlogger *kDefaultLogger, err error ) {
+func NewKDefaultLogger(opt *KDefaultLoggerOpt) (kdlogger *kDefaultLogger, err error) {
 
 	err = opt.Verify()
 	if nil != err {
@@ -74,14 +72,14 @@ func NewKDefaultLogger( opt *KDefaultLoggerOpt ) ( kdlogger *kDefaultLogger, err
 	}
 
 	kdlogger = &kDefaultLogger{
-		KObject:       kobject.NewKObject("kDefaultLogger"),
-		kLoggers:      make([]*kLogger, KLogWriterType_Max),
-		kLogTypeDepth: opt.LogTypeDepth,
-		loggerName:    opt.LoggerName,
+		KObject:		kobject.NewKObject("kDefaultLogger"),
+		kLoggers:		make([]*kLogger, KLogWriterType_Max),
+		kLogTypeDepth:	opt.LogTypeDepth,
+		loggerName:		opt.LoggerName,
 	}
 
 	var klogfile *kLogFile
-	klogfile, err = NewKLogFile( &KLogFileOpt{ KLogFileShiftType_Day, opt.RootDirectoryName, opt.LoggerName } )
+	klogfile, err = NewKLogFile(&KLogFileOpt{KLogFileShiftType_Day, opt.RootDirectoryName, opt.LoggerName})
 	if nil != err {
 		return
 	}
@@ -104,7 +102,7 @@ func NewKDefaultLogger( opt *KDefaultLoggerOpt ) ( kdlogger *kDefaultLogger, err
 			return
 		}
 
-		klogger, err = NewkLogger(&logWriter,"", opt.UseQueue )
+		klogger, err = NewkLogger(&logWriter,"", opt.UseQueue)
 		if nil != err {
 			return
 		}
@@ -114,7 +112,7 @@ func NewKDefaultLogger( opt *KDefaultLoggerOpt ) ( kdlogger *kDefaultLogger, err
 	return
 }
 
-func (m *kDefaultLogger) StopGoRoutineWait() ( err error ) {
+func (m *kDefaultLogger) StopGoRoutineWait() (err error) {
 
 	for _, r := range m.kLoggers {
 		r.StopGoRoutineWait()
@@ -125,7 +123,7 @@ func (m *kDefaultLogger) StopGoRoutineWait() ( err error ) {
 	return
 }
 
-func (m *kDefaultLogger) StopGoRoutineImmediately() ( err error ) {
+func (m *kDefaultLogger) StopGoRoutineImmediately() (err error) {
 
 	for _, r := range m.kLoggers {
 		r.StopGoRoutineImmediately()
@@ -136,7 +134,7 @@ func (m *kDefaultLogger) StopGoRoutineImmediately() ( err error ) {
 	return
 }
 
-func (m *kDefaultLogger) Log( writerType KLogWriterType, logType KLogType, format string, args ...interface{}) {
+func (m *kDefaultLogger) Log(writerType KLogWriterType, logType KLogType, format string, args ...interface{}) {
 
 	if 0 > writerType || KLogWriterType_Max <= writerType {
 		println(fmt.Sprintf("!!!---> kDefaultLogger.Log() unknown writerType : %d", writerType ))
@@ -181,7 +179,7 @@ func (m *kDefaultLogger) checkLogFile() {
 
 func MakeFatalFile(format string, v ...interface{}) {
 
-	file, err := os.OpenFile("fatal.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666 )
+	file, err := os.OpenFile("fatal.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if nil != err {
 		return
 	}
@@ -190,97 +188,97 @@ func MakeFatalFile(format string, v ...interface{}) {
 	log.Fatalln(fmt.Sprintf(format, v...))
 }
 
-func Log( writerType KLogWriterType, logType KLogType, format string, args ...interface{} ) {
+func Log(writerType KLogWriterType, logType KLogType, format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(writerType, logType, format, args...)
 	}
 }
 
-func LogInfo( format string, args ...interface{} ){
+func LogInfo(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_All, KLogType_Info, format, args...)
 	}
 }
 
-func LogWarn( format string, args ...interface{} ){
+func LogWarn(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_All, KLogType_Warn, format, args...)
 	}
 }
 
-func LogFatal( format string, args ...interface{} ){
+func LogFatal(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_All, KLogType_Fatal, format, args...)
 	}
 }
 
-func LogDebug( format string, args ...interface{} ){
+func LogDebug(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_All, KLogType_Debug, format, args...)
 	}
 }
 
-func LogDetail( format string, args ...interface{} ){
+func LogDetail(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_All, KLogType_Detail, format, args...)
 	}
 }
 
-func LogFileInfo( format string, args ...interface{} ){
+func LogFileInfo(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_File, KLogType_Info, format, args...)
 	}
 }
 
-func LogFileWarn( format string, args ...interface{} ){
+func LogFileWarn(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_File, KLogType_Warn, format, args...)
 	}
 }
 
-func LogFileFatal( format string, args ...interface{} ){
+func LogFileFatal(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_File, KLogType_Fatal, format, args...)
 	}
 }
 
-func LogFileDebug( format string, args ...interface{} ){
+func LogFileDebug(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_File, KLogType_Debug, format, args...)
 	}
 }
 
-func LogFileDetail( format string, args ...interface{} ){
+func LogFileDetail(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_File, KLogType_Detail, format, args...)
 	}
 }
 
-func LogConsoleInfo( format string, args ...interface{} ){
+func LogConsoleInfo(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_Console, KLogType_Info, format, args...)
 	}
 }
 
-func LogConsoleWarn( format string, args ...interface{} ){
+func LogConsoleWarn(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_Console, KLogType_Warn, format, args...)
 	}
 }
 
-func LogConsoleFatal( format string, args ...interface{} ){
+func LogConsoleFatal(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_Console, KLogType_Fatal, format, args...)
 	}
 }
 
-func LogConsoleDebug( format string, args ...interface{} ){
+func LogConsoleDebug(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_Console, KLogType_Debug, format, args...)
 	}
 }
 
-func LogConsoleDetail( format string, args ...interface{} ){
+func LogConsoleDetail(format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(KLogWriterType_Console, KLogType_Detail, format, args...)
 	}

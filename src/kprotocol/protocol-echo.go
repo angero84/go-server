@@ -27,11 +27,11 @@ func NewKPacketEcho(buff []byte, hasLengthField bool) *KPacketEcho {
 	return p
 }
 
-func (m *KPacketEcho) PacketID() 	uint32 	{ return 0 }
-func (m *KPacketEcho) Buffer() 		[]byte 	{ return m.buff }
-func (m *KPacketEcho) Body() 		[]byte 	{ return m.buff[4:] }
-func (m *KPacketEcho) Length() 		uint32 	{ return binary.BigEndian.Uint32(m.buff[0:4]) }
-func (m *KPacketEcho) Serialize() 	[]byte 	{ return m.buff }
+func (m *KPacketEcho) PacketID()	uint32 	{ return 0 }
+func (m *KPacketEcho) Buffer()		[]byte 	{ return m.buff }
+func (m *KPacketEcho) Body()		[]byte 	{ return m.buff[4:] }
+func (m *KPacketEcho) Length()		uint32 	{ return binary.BigEndian.Uint32(m.buff[0:4]) }
+func (m *KPacketEcho) Serialize()	[]byte 	{ return m.buff }
 
 
 type KProtocolEcho struct {
@@ -45,10 +45,10 @@ func (m *KProtocolEcho) ReadKPacket(conn *net.TCPConn) (IKPacket, error) {
 	)
 
 	// read length
-	if _, err := io.ReadFull(conn, lengthBytes); err != nil {
+	if _, err := io.ReadFull(conn, lengthBytes) ; err != nil {
 		return nil, err
 	}
-	if length = binary.BigEndian.Uint32(lengthBytes); length > 1024 {
+	if length = binary.BigEndian.Uint32(lengthBytes) ; length > 1024 {
 		return nil, errors.New("the size of packet is larger than the limit")
 	}
 
@@ -56,7 +56,7 @@ func (m *KProtocolEcho) ReadKPacket(conn *net.TCPConn) (IKPacket, error) {
 	copy(buff[0:4], lengthBytes)
 
 	// read body ( buff = lengthBytes + body )
-	if _, err := io.ReadFull(conn, buff[4:]); err != nil {
+	if _, err := io.ReadFull(conn, buff[4:]) ; nil != err {
 		return nil, err
 	}
 

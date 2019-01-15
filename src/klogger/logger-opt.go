@@ -14,13 +14,13 @@ type IKLogOpt interface {
 }
 
 type KLogFileOpt struct {
-	ShiftType 			KLogFileShiftType
+	ShiftType			KLogFileShiftType
 	RootDirectoryName	string
-	Prefix 				string
+	Prefix				string
 }
 
 func (m *KLogFileOpt) SetDefault() {
-	m.ShiftType 		= KLogFileShiftType_Day
+	m.ShiftType			= KLogFileShiftType_Day
 	m.RootDirectoryName	= "log"
 	m.Prefix			= "default"
 }
@@ -33,7 +33,7 @@ func (m *KLogFileOpt) VerifyAndSetDefault() {
 
 }
 
-func (m *KLogFileOpt) Verify() ( err error ) {
+func (m *KLogFileOpt) Verify() (err error) {
 
 	if 0 > m.ShiftType || KLogFileShiftType_Max <= m.ShiftType {
 		err = errors.New("KLogFileOpt.Verify() Unknown LogFileSwapType")
@@ -45,7 +45,7 @@ func (m *KLogFileOpt) Verify() ( err error ) {
 		return
 	}
 
-	if 0 >= len(m.Prefix) || false == kutil.CheckStringAlphabetOnly(m.Prefix){
+	if 0 >= len(m.Prefix) || false == kutil.CheckStringAlphabetOnly(m.Prefix) {
 		err = errors.New("KLogFileOpt.Verify() Set the prefix name alphabet only")
 		return
 	}

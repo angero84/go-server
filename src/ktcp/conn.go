@@ -31,19 +31,19 @@ func (m KConnErr) Error() string {
 
 type KConn struct {
 	*kobject.KObject
-	id                uint64
-	rawConn           *net.TCPConn
-	handler           IKConnHandler
-	protocol          kprotocol.IKProtocol
-	packetChanSend    chan kprotocol.IKPacket
-	packetChanReceive chan kprotocol.IKPacket
-	remoteHostIP      string
-	remotePort        string
+	id					uint64
+	rawConn				*net.TCPConn
+	handler				IKConnHandler
+	protocol			kprotocol.IKProtocol
+	packetChanSend		chan kprotocol.IKPacket
+	packetChanReceive	chan kprotocol.IKPacket
+	remoteHostIP		string
+	remotePort			string
 
-	disconnectOnce sync.Once
-	startOnce      sync.Once
-	lifeTime       kutil.KTimer
-	disconnectFlag int32
+	disconnectOnce		sync.Once
+	startOnce			sync.Once
+	lifeTime			kutil.KTimer
+	disconnectFlag		int32
 }
 
 func newConn(conn *net.TCPConn, id uint64, connOpt *KConnOpt) *KConn {
@@ -69,30 +69,30 @@ func newConn(conn *net.TCPConn, id uint64, connOpt *KConnOpt) *KConn {
 	}
 
 	return &KConn{
-		KObject:           kobject.NewKObject("KConn"),
-		id:                id,
-		rawConn:           conn,
-		handler:           connOpt.Handler,
-		protocol:          connOpt.Protocol,
-		packetChanSend:    make(chan kprotocol.IKPacket, connOpt.PacketChanMaxSend),
-		packetChanReceive: make(chan kprotocol.IKPacket, connOpt.PacketChanMaxReceive),
-		remoteHostIP:      host,
-		remotePort:        port,
+		KObject:			kobject.NewKObject("KConn"),
+		id:					id,
+		rawConn:			conn,
+		handler:			connOpt.Handler,
+		protocol:			connOpt.Protocol,
+		packetChanSend:		make(chan kprotocol.IKPacket, connOpt.PacketChanMaxSend),
+		packetChanReceive:	make(chan kprotocol.IKPacket, connOpt.PacketChanMaxReceive),
+		remoteHostIP:		host,
+		remotePort:			port,
 	}
 }
 
-func (m *KConn) ID() 				uint64 			{ return m.id }
-func (m *KConn) RawConn() 			*net.TCPConn 	{ return m.rawConn }
-func (m *KConn) RemoteHostIP()		string 			{ return m.remoteHostIP }
-func (m *KConn) RemoteHostPort()	string 			{ return m.remotePort }
+func (m *KConn) ID()				uint64			{ return m.id }
+func (m *KConn) RawConn()			*net.TCPConn	{ return m.rawConn }
+func (m *KConn) RemoteHostIP()		string			{ return m.remoteHostIP }
+func (m *KConn) RemoteHostPort()	string			{ return m.remotePort }
 
 
-func (m *KConn) Disconnect( gracefully bool ) {
+func (m *KConn) Disconnect(gracefully bool) {
 
 	m.disconnectOnce.Do(
 		func() {
 			klog.LogDebug("KConn.disconnect() called - id:%d", m.id)
-			go m.disconnect( gracefully )
+			go m.disconnect(gracefully)
 		})
 }
 
@@ -109,7 +109,7 @@ func (m *KConn) Send(p kprotocol.IKPacket) (err error)  {
 	}
 
 	defer func() {
-		if e := recover(); e != nil {
+		if e := recover() ; e != nil {
 			err = KConnErr{KConnErrType_Closed}
 			klog.LogWarn("[id:%d] KConn.Send() recovered : %v", m.id, e)
 		}
@@ -137,7 +137,7 @@ func (m *KConn) SendWithTimeout(p kprotocol.IKPacket, timeout time.Duration) (er
 	}
 
 	defer func() {
-		if e := recover(); e != nil {
+		if e := recover() ; e != nil {
 			err = KConnErr{KConnErrType_Closed}
 			klog.LogWarn("[id:%d] KConn.SendWithTimeout() recovered : %v", m.id, e)
 		}
@@ -187,7 +187,7 @@ func (m *KConn) Start() {
 	})
 }
 
-func (m *KConn) disconnect ( gracefully bool ) {
+func (m *KConn) disconnect (gracefully bool) {
 
 	defer func() {
 		if rc := recover() ; nil != rc {
@@ -201,7 +201,7 @@ func (m *KConn) disconnect ( gracefully bool ) {
 	if gracefully {
 		close(m.packetChanSend)
 		for p := range m.packetChanSend {
-			if _, err := m.rawConn.Write(p.Serialize()); err != nil {
+			if _, err := m.rawConn.Write(p.Serialize()) ; err != nil {
 				klog.LogWarn("[id:%d] KConn.disconnect() Write err : %s", m.id, err.Error())
 				break
 			}
@@ -266,8 +266,8 @@ func (m *KConn) writing() {
 			if m.Disconnected() {
 				return
 			}
-			if _, err := m.rawConn.Write(p.Serialize()); err != nil {
-				klog.LogDebug("[id:%d] KConn.writing() rawConn.Write err : %s", m.id, err.Error() )
+			if _, err := m.rawConn.Write(p.Serialize()) ; err != nil {
+				klog.LogDebug("[id:%d] KConn.writing() rawConn.Write err : %s", m.id, err.Error())
 				return
 			}
 		}

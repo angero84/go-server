@@ -5,7 +5,7 @@ import (
 	"kprotocol"
 )
 
-func NewProcessorExampleJson() ( handlers map[uint32]KConnHandlerFunc ) {
+func NewProcessorExampleJson() (handlers map[uint32]KConnHandlerFunc) {
 
 	handlers = make(map[uint32]KConnHandlerFunc)
 

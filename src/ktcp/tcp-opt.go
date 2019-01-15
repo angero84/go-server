@@ -28,6 +28,7 @@ func (m *KAcceptorOpt) SetDefault() {
 	m.KeepAliveTime			= 2000
 	m.UseLinger				= true
 	m.LingerTime			= 2000
+	m.ReportingIntervalTime = 10000
 }
 
 func (m *KAcceptorOpt) VerifyAndSetDefault() {
@@ -59,7 +60,17 @@ func (m *KAcceptorOpt) Verify() ( err error ) {
 	}
 
 	if m.UseLinger && 10000 < m.LingerTime {
-		err = errors.New(fmt.Sprintf("KAcceptorOpt.Verify() LingerTime too big : %d milisec", m.LingerTime))
+		err = errors.New(fmt.Sprintf("KAcceptorOpt.Verify() LingerTime too long : %d milisec", m.LingerTime))
+		return
+	}
+
+	if 10000 > m.AcceptTimeout || 600000 < m.AcceptTimeout {
+		err = errors.New(fmt.Sprintf("KAcceptorOpt.Verify() AcceptTimeout too long or short : %d milisec", m.AcceptTimeout))
+		return
+	}
+
+	if 1000 > m.ReportingIntervalTime {
+		err = errors.New(fmt.Sprintf("KAcceptorOpt.Verify() ReportingIntervalTime too short : %d milisec", m.ReportingIntervalTime))
 		return
 	}
 

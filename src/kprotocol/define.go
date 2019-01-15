@@ -5,7 +5,7 @@ import (
 )
 
 type IKPacket interface {
-	PacketID() 		uint32
+	PacketID()		uint32
 	Buffer()		[]byte
 	Body()			[]byte
 	Serialize()		[]byte

@@ -14,15 +14,15 @@ import (
 
 type Acceptor struct {
 	*kobject.KObject
-	handler  	IKConnHandler
-	protocol 	kprotocol.IKProtocol
-	opt		   	*KAcceptorOpt
-	port     	uint32
+	handler		IKConnHandler
+	protocol	kprotocol.IKProtocol
+	opt			*KAcceptorOpt
+	port		uint32
 
 	connIDSeq	uint64
 }
 
-func NewAcceptor(port uint32, opt *KAcceptorOpt, handler IKConnHandler, protocol kprotocol.IKProtocol) ( srv *Acceptor, err error ) {
+func NewAcceptor(port uint32, opt *KAcceptorOpt, handler IKConnHandler, protocol kprotocol.IKProtocol) (srv *Acceptor, err error) {
 
 	err = opt.Verify()
 	if nil != err {
@@ -30,17 +30,17 @@ func NewAcceptor(port uint32, opt *KAcceptorOpt, handler IKConnHandler, protocol
 	}
 
 	srv = &Acceptor{
-		KObject:  	kobject.NewKObject("Acceptor"),
-		handler:  	handler,
-		protocol: 	protocol,
-		opt:   		opt,
-		port:     	port,
+		KObject:	kobject.NewKObject("Acceptor"),
+		handler:	handler,
+		protocol:	protocol,
+		opt:		opt,
+		port:		port,
 	}
 
 	return
 }
 
-func (m *Acceptor) Start() ( err error ) {
+func (m *Acceptor) Start() (err error) {
 
 	var tcpAddr *net.TCPAddr
 	tcpAddr, err = net.ResolveTCPAddr("tcp4", fmt.Sprintf(":%d", m.port))
@@ -63,14 +63,14 @@ func (m *Acceptor) Start() ( err error ) {
 
 	acceptTimeout := time.Duration(m.opt.AcceptTimeout)*time.Millisecond
 	connOpt := KConnOpt{
-		Handler:	 			m.handler,
-		Protocol: 				m.protocol,
-		KeepAliveTime: 			time.Duration(m.opt.KeepAliveTime)*time.Millisecond,
+		Handler:				m.handler,
+		Protocol:				m.protocol,
+		KeepAliveTime:			time.Duration(m.opt.KeepAliveTime)*time.Millisecond,
 		PacketChanMaxSend:		m.opt.PacketChanMaxSend,
 		PacketChanMaxReceive:	m.opt.PacketChanMaxReceive,
 		LingerTime:				m.opt.LingerTime,
 		NoDelay:				m.opt.NoDelay,
-		UseLinger: 				m.opt.UseLinger,
+		UseLinger:				m.opt.UseLinger,
 	}
 	err = connOpt.Verify()
 	if nil != err {
@@ -108,13 +108,13 @@ func (m *Acceptor) Start() ( err error ) {
 	}
 }
 
-func (m *Acceptor) newConnSeqId() ( seq uint64 ) {
+func (m *Acceptor) newConnSeqId() (seq uint64) {
 	seq = atomic.AddUint64(&m.connIDSeq, 1)
 	return
 }
 
 
-func (m *Acceptor) reporting () {
+func (m *Acceptor) reporting() {
 
 	defer func() {
 		if rc := recover() ; nil != rc {

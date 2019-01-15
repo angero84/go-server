@@ -5,10 +5,10 @@ import (
 )
 
 type KObject struct {
-	name 			string
-	obj				chan struct{}
-	stopOnce 		sync.Once
-	wg				sync.WaitGroup
+	name		string
+	obj			chan struct{}
+	stopOnce	sync.Once
+	wg			sync.WaitGroup
 }
 
 func NewKObject(name string) *KObject {
@@ -18,9 +18,9 @@ func NewKObject(name string) *KObject {
 func (m *KObject) Name() 				string 				{ return m.name }
 func (m *KObject) StopGoRoutineRequest() <-chan struct{}	{ return m.obj }
 
-func (m *KObject) StopGoRoutineWait() ( err error ) {
+func (m *KObject) StopGoRoutineWait() (err error) {
 
-	m.stopOnce.Do( func() {
+	m.stopOnce.Do(func() {
 		close(m.obj)
 	})
 
@@ -28,16 +28,16 @@ func (m *KObject) StopGoRoutineWait() ( err error ) {
 	return
 }
 
-func (m *KObject) StopGoRoutineImmediately() ( err error ) {
+func (m *KObject) StopGoRoutineImmediately() (err error) {
 
-	m.stopOnce.Do( func() {
+	m.stopOnce.Do(func() {
 		close(m.obj)
 	})
 
 	return
 }
 
-func (m *KObject) StartGoRoutine( fn func() ) {
+func (m *KObject) StartGoRoutine(fn func()) {
 	m.wg.Add(1)
 	go func() {
 		fn()
