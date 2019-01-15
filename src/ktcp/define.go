@@ -1,7 +1,7 @@
-package tcp
+package ktcp
 
 import (
-	"protocol"
+	"kprotocol"
 )
 
 type IKConnHandler interface {
@@ -9,7 +9,7 @@ type IKConnHandler interface {
 	OnConnected		(*KConn)
 
 	// OnMessage is called when the connection receives a packet,
-	OnMessage		(*KConn, protocol.IKPacket)
+	OnMessage		(*KConn, kprotocol.IKPacket)
 
 	// OnClose is called when the connection closed
 	OnDisconnected	(*KConn)

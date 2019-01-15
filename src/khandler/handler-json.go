@@ -1,9 +1,9 @@
-package handler
+package khandler
 
 import (
-	"protocol"
-	klog 		"logger"
-	"tcp"
+	"kprotocol"
+	"ktcp"
+	klog 		"klogger"
 )
 
 type KConnHandlerJson struct{
@@ -18,11 +18,11 @@ func NewKConnHandlerJson( handlers map[uint32]KConnHandlerFunc ) *KConnHandlerJs
 	return callback
 }
 
-func (m *KConnHandlerJson) OnConnected(c *tcp.KConn) {
+func (m *KConnHandlerJson) OnConnected(c *ktcp.KConn) {
 	klog.LogDebug( "KConnCallbackJson.OnConnected() - [id:%d][ip:%s]", c.ID(), c.RemoteHostIP())
 }
 
-func (m *KConnHandlerJson) OnMessage(c *tcp.KConn, p protocol.IKPacket) {
+func (m *KConnHandlerJson) OnMessage(c *ktcp.KConn, p kprotocol.IKPacket) {
 	packetid := p.PacketID()
 	klog.LogDetail( "KConnCallbackJson.OnMessage() - [id:%d][ip:%s][packetid:%d]", c.ID(), c.RemoteHostIP, packetid)
 	if fn, exist := m.handlers[packetid] ; exist {
@@ -33,7 +33,7 @@ func (m *KConnHandlerJson) OnMessage(c *tcp.KConn, p protocol.IKPacket) {
 
 }
 
-func (m *KConnHandlerJson) OnDisconnected(c *tcp.KConn) {
+func (m *KConnHandlerJson) OnDisconnected(c *ktcp.KConn) {
 	klog.LogDebug( "KConnCallbackJson.OnDisconnected() - [id:%d][ip:%s]", c.ID(), c.RemoteHostIP())
 }
 

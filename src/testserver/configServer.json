@@ -1,6 +1,6 @@
 {
     "Port":8989,
-    "TcpConfig" : {
+    "AcceptorOpt" : {
         "PacketChanMaxSend": 100,
         "PacketChanMaxReceive": 100,
         "AcceptTimeout": 300000,
@@ -8,6 +8,6 @@
         "KeepAliveTime": 5000,
         "UseLinger":true,
         "LingerTime":2000,
-        "ReportingIntervalTime":1000
+        "ReportingIntervalTime":3000
     }
 }

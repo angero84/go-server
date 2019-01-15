@@ -1,10 +1,10 @@
-package logger
+package klogger
 
 import (
 	"errors"
 	"fmt"
 
-	"util"
+	"kutil"
 )
 
 type IKLogOpt interface {
@@ -40,12 +40,12 @@ func (m *KLogFileOpt) Verify() ( err error ) {
 		return
 	}
 
-	if 0 < len(m.RootDirectoryName) && false == util.CheckStringAlphabetOnly(m.RootDirectoryName) {
+	if 0 < len(m.RootDirectoryName) && false == kutil.CheckStringAlphabetOnly(m.RootDirectoryName) {
 		err = errors.New("KLogFileOpt.Verify() Set the directory name alphabet only")
 		return
 	}
 
-	if 0 >= len(m.Prefix) || false == util.CheckStringAlphabetOnly(m.Prefix){
+	if 0 >= len(m.Prefix) || false == kutil.CheckStringAlphabetOnly(m.Prefix){
 		err = errors.New("KLogFileOpt.Verify() Set the prefix name alphabet only")
 		return
 	}
@@ -78,12 +78,12 @@ func (m *KDefaultLoggerOpt) VerifyAndSetDefault() {
 
 func (m *KDefaultLoggerOpt) Verify() ( err error ) {
 
-	if 0 < len(m.RootDirectoryName) && false == util.CheckStringAlphabetOnly(m.RootDirectoryName) {
+	if 0 < len(m.RootDirectoryName) && false == kutil.CheckStringAlphabetOnly(m.RootDirectoryName) {
 		err = errors.New("KDefaultLoggerOpt.Verify() Set the directory name alphabet only")
 		return
 	}
 
-	if 0 >= len(m.LoggerName) || false == util.CheckStringAlphabetOnly(m.LoggerName){
+	if 0 >= len(m.LoggerName) || false == kutil.CheckStringAlphabetOnly(m.LoggerName){
 		err = errors.New("KDefaultLoggerOpt.Verify() Set the logger name alphabet only")
 		return
 	}

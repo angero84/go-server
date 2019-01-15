@@ -1,4 +1,4 @@
-package logger
+package klogger
 
 const (
 	KLOG_QUEUE_CHAN_MAX 		= 100

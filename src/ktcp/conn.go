@@ -1,4 +1,4 @@
-package tcp
+package ktcp
 
 import (
 	"net"
@@ -6,10 +6,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"protocol"
-	"util"
-	"object"
-	klog 		"logger"
+	"kprotocol"
+	"kutil"
+	"kobject"
+	klog 		"klogger"
 )
 
 type KConnErr struct {
@@ -30,20 +30,20 @@ func (m KConnErr) Error() string {
 }
 
 type KConn struct {
-	*object.KObject
-	id					uint64
-	rawConn            	*net.TCPConn
-	handler 			IKConnHandler
-	protocol 			protocol.IKProtocol
-	packetChanSend    	chan protocol.IKPacket
-	packetChanReceive 	chan protocol.IKPacket
-	remoteHostIP		string
-	remotePort 			string
+	*kobject.KObject
+	id                uint64
+	rawConn           *net.TCPConn
+	handler           IKConnHandler
+	protocol          kprotocol.IKProtocol
+	packetChanSend    chan kprotocol.IKPacket
+	packetChanReceive chan kprotocol.IKPacket
+	remoteHostIP      string
+	remotePort        string
 
-	disconnectOnce      sync.Once
-	startOnce 			sync.Once
-	lifeTime 			util.KTimer
-	disconnectFlag      int32
+	disconnectOnce sync.Once
+	startOnce      sync.Once
+	lifeTime       kutil.KTimer
+	disconnectFlag int32
 }
 
 func newConn(conn *net.TCPConn, id uint64, connOpt *KConnOpt) *KConn {
@@ -69,15 +69,15 @@ func newConn(conn *net.TCPConn, id uint64, connOpt *KConnOpt) *KConn {
 	}
 
 	return &KConn{
-		KObject: 			object.NewKObject("KConn"),
-		id:					id,
-		rawConn:           	conn,
-		handler:			connOpt.Handler,
-		protocol: 			connOpt.Protocol,
-		packetChanSend:    	make(chan protocol.IKPacket, connOpt.PacketChanMaxSend),
-		packetChanReceive: 	make(chan protocol.IKPacket, connOpt.PacketChanMaxReceive),
-		remoteHostIP: 		host,
-		remotePort: 		port,
+		KObject:           kobject.NewKObject("KConn"),
+		id:                id,
+		rawConn:           conn,
+		handler:           connOpt.Handler,
+		protocol:          connOpt.Protocol,
+		packetChanSend:    make(chan kprotocol.IKPacket, connOpt.PacketChanMaxSend),
+		packetChanReceive: make(chan kprotocol.IKPacket, connOpt.PacketChanMaxReceive),
+		remoteHostIP:      host,
+		remotePort:        port,
 	}
 }
 
@@ -100,7 +100,7 @@ func (m *KConn) Disconnected() bool {
 	return atomic.LoadInt32(&m.disconnectFlag) == 1
 }
 
-func (m *KConn) Send(p protocol.IKPacket) (err error)  {
+func (m *KConn) Send(p kprotocol.IKPacket) (err error)  {
 
 	if m.Disconnected() {
 		err = KConnErr{KConnErrType_Closed}
@@ -128,7 +128,7 @@ func (m *KConn) Send(p protocol.IKPacket) (err error)  {
 }
 
 // AsyncWritePacket async writes a packet, this method will never block
-func (m *KConn) SendWithTimeout(p protocol.IKPacket, timeout time.Duration) (err error) {
+func (m *KConn) SendWithTimeout(p kprotocol.IKPacket, timeout time.Duration) (err error) {
 
 	if m.Disconnected() {
 		err = KConnErr{KConnErrType_Closed}

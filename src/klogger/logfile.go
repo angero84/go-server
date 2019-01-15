@@ -1,4 +1,4 @@
-package logger
+package klogger
 
 import (
 	"time"
@@ -7,11 +7,11 @@ import (
 	"sync"
 	"errors"
 
-	"object"
+	"kobject"
 )
 
 type kLogFile struct {
-	*object.KObject
+	*kobject.KObject
 	file				*os.File
 	shiftType 			KLogFileShiftType
 	rootDirectoryName	string
@@ -30,10 +30,10 @@ func NewKLogFile( opt *KLogFileOpt ) ( logfile *kLogFile, err error ) {
 	}
 
 	logfile = &kLogFile{
-		KObject: 			object.NewKObject("kLogFile"),
-		shiftType:			opt.ShiftType,
-		rootDirectoryName: 	opt.RootDirectoryName,
-		prefix: 			opt.Prefix,
+		KObject:           kobject.NewKObject("kLogFile"),
+		shiftType:         opt.ShiftType,
+		rootDirectoryName: opt.RootDirectoryName,
+		prefix:            opt.Prefix,
 	}
 
 	_, err = logfile.CheckFileShift()

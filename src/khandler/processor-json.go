@@ -1,8 +1,8 @@
-package handler
+package khandler
 
 import (
-	"tcp"
-	"protocol"
+	"ktcp"
+	"kprotocol"
 )
 
 func NewProcessorExampleJson() ( handlers map[uint32]KConnHandlerFunc ) {
@@ -14,9 +14,9 @@ func NewProcessorExampleJson() ( handlers map[uint32]KConnHandlerFunc ) {
 	return
 }
 
-func OnProcessorRequestLogin(c *tcp.KConn, p protocol.IKPacket) {
+func OnProcessorRequestLogin(c *ktcp.KConn, p kprotocol.IKPacket) {
 
-	login := &protocol.ProtocolJsonRequestLogin{}
+	login := &kprotocol.ProtocolJsonRequestLogin{}
 	err := login.Unmarshal(p)
 	if nil != err {
 		return
@@ -24,7 +24,7 @@ func OnProcessorRequestLogin(c *tcp.KConn, p protocol.IKPacket) {
 
 	//do something
 
-	sendlogin := &protocol.ProtocolJsonRequestLogin{}
+	sendlogin := &kprotocol.ProtocolJsonRequestLogin{}
 	sendlogin.UserID = "angero"
 	sendlogin.Password = "password"
 	c.Send(sendlogin.MakePacket())

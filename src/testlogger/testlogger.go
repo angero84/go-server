@@ -1,17 +1,17 @@
 package main
 
 import (
-	"util"
-	"logger"
+	"kutil"
+	"klogger"
 )
 
 func main() {
 
-	tempLogger, _ := logger.NewKDefaultLogger( &logger.KDefaultLoggerOpt{
-		LoggerName:			"logtest",
-		RootDirectoryName:	"log",
-		LogTypeDepth: 		logger.KLogType_Debug,
-		UseQueue: 			false,
+	tempLogger, _ := klogger.NewKDefaultLogger( &klogger.KDefaultLoggerOpt{
+		LoggerName:        "logtest",
+		RootDirectoryName: "log",
+		LogTypeDepth:      klogger.KLogType_Debug,
+		UseQueue:          false,
 	})
 
 	sync := make(chan int)
@@ -21,7 +21,7 @@ func main() {
 		defer tempLogger.StopGoRoutineWait()
 
 		number := 0
-		timer := util.NewKTimer()
+		timer := kutil.NewKTimer()
 
 		for {
 
@@ -29,7 +29,7 @@ func main() {
 				break
 			}
 
-			tempLogger.Log(logger.KLogWriterType_File, logger.KLogType_Info, "%d 동해물과백두산이마르고닳도록하느님이보우하사우리나라만세", number)
+			tempLogger.Log(klogger.KLogWriterType_File, klogger.KLogType_Info, "%d 동해물과백두산이마르고닳도록하느님이보우하사우리나라만세", number)
 
 			number++
 		}

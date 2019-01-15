@@ -1,4 +1,4 @@
-package logger
+package klogger
 
 import (
 	"log"
@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"object"
+	"kobject"
 )
 
 var instanceKDefaultLogger *kDefaultLogger
@@ -59,7 +59,7 @@ func Init( opt *KDefaultLoggerOpt ) {
 }
 
 type kDefaultLogger struct {
-	*object.KObject
+	*kobject.KObject
 	kLoggers		[]*kLogger
 	kLogFile 		*kLogFile
 	kLogTypeDepth	KLogType
@@ -74,10 +74,10 @@ func NewKDefaultLogger( opt *KDefaultLoggerOpt ) ( kdlogger *kDefaultLogger, err
 	}
 
 	kdlogger = &kDefaultLogger{
-		KObject:		object.NewKObject("kDefaultLogger"),
-		kLoggers: 		make([]*kLogger, KLogWriterType_Max),
-		kLogTypeDepth:	opt.LogTypeDepth,
-		loggerName: 	opt.LoggerName,
+		KObject:       kobject.NewKObject("kDefaultLogger"),
+		kLoggers:      make([]*kLogger, KLogWriterType_Max),
+		kLogTypeDepth: opt.LogTypeDepth,
+		loggerName:    opt.LoggerName,
 	}
 
 	var klogfile *kLogFile

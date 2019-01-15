@@ -1,9 +1,9 @@
-package handler
+package khandler
 
 import (
-	"protocol"
-	"tcp"
-	klog "logger"
+	"kprotocol"
+	"ktcp"
+	klog "klogger"
 )
 
 type KConnHandlerEcho struct{
@@ -13,18 +13,18 @@ func NewKConnHandlerEcho() *KConnHandlerEcho {
 	return &KConnHandlerEcho{}
 }
 
-func (m *KConnHandlerEcho) OnConnected(c *tcp.KConn) {
+func (m *KConnHandlerEcho) OnConnected(c *ktcp.KConn) {
 
 	klog.LogDebug( "OnConnected - [id:%d][ip:%s]", c.ID(), c.RemoteHostIP())
 }
 
-func (m *KConnHandlerEcho) OnMessage(c *tcp.KConn, p protocol.IKPacket) {
-	echoPacket := p.(*protocol.KPacketEcho)
+func (m *KConnHandlerEcho) OnMessage(c *ktcp.KConn, p kprotocol.IKPacket) {
+	echoPacket := p.(*kprotocol.KPacketEcho)
 	klog.LogDetail("OnMessage:[%v] [%v]\n", echoPacket.Length(), string(echoPacket.Body()))
-	c.Send(protocol.NewKPacketEcho(echoPacket.Serialize(), true))
+	c.Send(kprotocol.NewKPacketEcho(echoPacket.Serialize(), true))
 
 }
 
-func (m *KConnHandlerEcho) OnDisconnected(c *tcp.KConn) {
+func (m *KConnHandlerEcho) OnDisconnected(c *ktcp.KConn) {
 	klog.LogDebug( "OnDisconnected - [id:%d][ip:%s]", c.ID(), c.RemoteHostIP())
 }

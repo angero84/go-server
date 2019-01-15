@@ -1,16 +1,16 @@
-package logger
+package klogger
 
 import (
 	"fmt"
 	"io"
 	"log"
 
-	"util"
-	"object"
+	"kutil"
+	"kobject"
 )
 
 type kLogger struct {
-	*object.KObject
+	*kobject.KObject
 	logger *log.Logger
 
 	queue		chan func()
@@ -20,10 +20,10 @@ type kLogger struct {
 func NewkLogger( writer *io.Writer, prefix string, useQueue bool ) ( klogger *kLogger, err error ) {
 
 	klogger = &kLogger{
-		KObject:	object.NewKObject("kLogger"),
-		logger: 	log.New( *writer, prefix, log.Ldate|log.Ltime|log.Lmicroseconds ),
-		queue:		make(chan func(), KLOG_QUEUE_CHAN_MAX),
-		useQueue: 	useQueue,
+		KObject:  kobject.NewKObject("kLogger"),
+		logger:   log.New( *writer, prefix, log.Ldate|log.Ltime|log.Lmicroseconds ),
+		queue:    make(chan func(), KLOG_QUEUE_CHAN_MAX),
+		useQueue: useQueue,
 	}
 
 	klogger.StartGoRoutine(klogger.logging)
@@ -42,7 +42,7 @@ func (m *kLogger) PrintfWithLogType( logType KLogType, format string, v ...inter
 	}()
 
 	if m.useQueue {
-		queueTime := util.NewKTimer()
+		queueTime := kutil.NewKTimer()
 		select {
 		case m.queue <- func() { m.log(logType, queueTime, format, v...) }:
 		}
@@ -51,7 +51,7 @@ func (m *kLogger) PrintfWithLogType( logType KLogType, format string, v ...inter
 	}
 }
 
-func (m *kLogger) log( logType KLogType, queueTime *util.KTimer, format string, v ...interface{} ) {
+func (m *kLogger) log( logType KLogType, queueTime *kutil.KTimer, format string, v ...interface{} ) {
 
 	if m.useQueue && nil != queueTime {
 		elapsed := queueTime.ElapsedMilisec()

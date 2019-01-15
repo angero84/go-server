@@ -1,5 +1,4 @@
-package protocol
-
+package kprotocol
 
 import (
 	"encoding/binary"

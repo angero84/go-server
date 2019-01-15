@@ -9,20 +9,19 @@ import (
 	"syscall"
 	"encoding/json"
 
-	ktcp 		"tcp"
-	kprotocol	"protocol"
-	klog 		"logger"
-	khandler	"handler"
+	"ktcp"
+	"kprotocol"
+	klog "klogger"
+	"khandler"
+
 )
 
 type serverConfig struct {
-	Port 			uint32 			`json:"Port"`
-	TcpConfig		ktcp.Config 	`json:"TcpConfig"`
+	Port 			uint32 				`json:"Port"`
+	AcceptorOpt		ktcp.KAcceptorOpt	`json:"AcceptorOpt"`
 }
 
 func main() {
-
-
 
 	klog.LogInfo("Testserver started")
 
@@ -44,19 +43,19 @@ func main() {
 	handler := khandler.NewKConnHandlerEcho()
 	protocol := &kprotocol.KProtocolEcho{}
 
-	srv, err := ktcp.NewServer(serverConfig.Port, &serverConfig.TcpConfig, handler, protocol)
+	acceptor, err := ktcp.NewAcceptor(serverConfig.Port, &serverConfig.AcceptorOpt, handler, protocol)
 	if nil != err {
-		klog.LogWarn("Failed create server : %s", err.Error())
+		klog.LogWarn("Failed acceptor server : %s", err.Error())
 		return
 	}
 
-	go srv.Start()
+	go acceptor.Start()
 
 	chSig := make(chan os.Signal)
 	signal.Notify(chSig, syscall.SIGINT, syscall.SIGTERM)
 	fmt.Println("Signal: ", <-chSig)
 
 	// stops service
-	srv.StopGoRoutineWait()
+	acceptor.StopGoRoutineWait()
 	klog.LogInfo("Main end")
 }

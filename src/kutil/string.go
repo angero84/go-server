@@ -1,4 +1,4 @@
-package util
+package kutil
 
 
 func CheckStringAlphabetOnly( value string ) ( valid bool ) {

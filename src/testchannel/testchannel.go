@@ -1,7 +1,7 @@
 package main
 
 import (
-	"object"
+	"kobject"
 	"sync"
 	"fmt"
 	"runtime"
@@ -12,7 +12,7 @@ import (
 
 
 type testChannel struct {
-	*object.KObject
+	*kobject.KObject
 	ch				chan interface{}
 	chSize 			int
 	grCount 		int
@@ -25,11 +25,11 @@ type testChannel struct {
 func newTestChannel( chSize, grCount int ) ( testch *testChannel ) {
 
 	testch =  &testChannel{
-		KObject:	object.NewKObject("testChannel"),
-		ch:			make(chan interface{}, chSize),
-		chSize: 	chSize,
-		grCount: 	grCount,
-		popCount: 	make([]int, grCount),
+		KObject:  kobject.NewKObject("testChannel"),
+		ch:       make(chan interface{}, chSize),
+		chSize:   chSize,
+		grCount:  grCount,
+		popCount: make([]int, grCount),
 	}
 
 	return
