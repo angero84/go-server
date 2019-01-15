@@ -5,13 +5,10 @@ import (
 )
 
 type IKConnHandler interface {
-	// OnConnect is called when the connection was accepted,
 	OnConnected		(*KConn)
 
-	// OnMessage is called when the connection receives a packet,
 	OnMessage		(*KConn, kprotocol.IKPacket)
 
-	// OnClose is called when the connection closed
 	OnDisconnected	(*KConn)
 }
 

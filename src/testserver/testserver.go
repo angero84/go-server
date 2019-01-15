@@ -1,19 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
-	"encoding/json"
 
-	"ktcp"
-	"kprotocol"
-	klog "klogger"
 	"khandler"
-
+	klog "klogger"
+	"kprotocol"
+	"ktcp"
 )
 
 type serverConfig struct {
@@ -45,17 +44,24 @@ func main() {
 
 	acceptor, err := ktcp.NewAcceptor(serverConfig.Port, &serverConfig.AcceptorOpt, handler, protocol)
 	if nil != err {
-		klog.LogWarn("Failed acceptor server : %s", err.Error())
+		klog.LogWarn("Failed to create acceptor : %s", err.Error())
 		return
 	}
 
-	go acceptor.Start()
-
 	chSig := make(chan os.Signal)
+
+	go func () {
+		err = acceptor.Start()
+		if nil != err {
+			klog.LogFatal("Failed start acceptor : %s", err.Error())
+			chSig <- syscall.SIGTERM
+		}
+	}()
+
+
 	signal.Notify(chSig, syscall.SIGINT, syscall.SIGTERM)
 	fmt.Println("Signal: ", <-chSig)
 
-	// stops service
 	acceptor.StopGoRoutineWait()
 	klog.LogInfo("Main end")
 }

@@ -10,13 +10,13 @@ import (
 )
 
 type KAcceptorOpt struct {
-	PacketChanMaxSend    	uint32	`json:"PacketChanMaxSend"`
-	PacketChanMaxReceive 	uint32	`json:"PacketChanMaxReceive"`
+	PacketChanMaxSend		uint32	`json:"PacketChanMaxSend"`
+	PacketChanMaxReceive	uint32	`json:"PacketChanMaxReceive"`
 	AcceptTimeout			uint32	`json:"AcceptTimeout"`
 	NoDelay					bool	`json:"NoDelay"`
-	KeepAliveTime 			uint32	`json:"KeepAliveTime"`
-	UseLinger 				bool 	`json:"UseLinger"`
-	LingerTime 				uint32 	`json:"LingerTime"`
+	KeepAliveTime			uint32	`json:"KeepAliveTime"`
+	UseLinger				bool 	`json:"UseLinger"`
+	LingerTime				uint32 	`json:"LingerTime"`
 	ReportingIntervalTime	uint32 	`json:"ReportingIntervalTime"`
 }
 
@@ -28,17 +28,17 @@ func (m *KAcceptorOpt) SetDefault() {
 	m.KeepAliveTime			= 2000
 	m.UseLinger				= true
 	m.LingerTime			= 2000
-	m.ReportingIntervalTime = 10000
+	m.ReportingIntervalTime	= 10000
 }
 
 func (m *KAcceptorOpt) VerifyAndSetDefault() {
 	if err := m.Verify() ; nil != err {
 		m.SetDefault()
-		klog.LogWarn( "KAcceptorOpt.Verify() failed and set default : %s", err.Error())
+		klog.LogWarn("KAcceptorOpt.Verify() failed and set default : %s", err.Error())
 	}
 }
 
-func (m *KAcceptorOpt) Verify() ( err error ) {
+func (m *KAcceptorOpt) Verify() (err error) {
 
 	if 0 >= m.PacketChanMaxSend || 1000 < m.PacketChanMaxSend {
 		err = errors.New(fmt.Sprintf("KAcceptorOpt.Verify() PacketChanMaxSend too big or zero : %d", m.PacketChanMaxSend))
@@ -56,7 +56,7 @@ func (m *KAcceptorOpt) Verify() ( err error ) {
 	}
 
 	if 3600000 < m.KeepAliveTime {
-		klog.LogWarn("KAcceptorOpt.Verify() KeepAliveTime too long : %d milisec", m.KeepAliveTime )
+		klog.LogWarn("KAcceptorOpt.Verify() KeepAliveTime too long : %d milisec", m.KeepAliveTime)
 	}
 
 	if m.UseLinger && 10000 < m.LingerTime {
@@ -78,20 +78,20 @@ func (m *KAcceptorOpt) Verify() ( err error ) {
 }
 
 type KConnOpt struct {
-	Handler              IKConnHandler
-	Protocol             kprotocol.IKProtocol
-	KeepAliveTime        time.Duration
-	PacketChanMaxSend    uint32
-	PacketChanMaxReceive uint32
-	LingerTime           uint32
-	NoDelay              bool
-	UseLinger            bool
+	Handler					IKConnHandler
+	Protocol				kprotocol.IKProtocol
+	KeepAliveTime			time.Duration
+	PacketChanMaxSend		uint32
+	PacketChanMaxReceive	uint32
+	LingerTime				uint32
+	NoDelay					bool
+	UseLinger				bool
 
 }
 
 func (m *KConnOpt) SetDefault() {
-	m.Handler 				= nil
-	m.Protocol 				= nil
+	m.Handler				= nil
+	m.Protocol				= nil
 	m.KeepAliveTime			= time.Millisecond*2000
 	m.PacketChanMaxSend		= 100
 	m.PacketChanMaxReceive	= 100
@@ -103,11 +103,11 @@ func (m *KConnOpt) SetDefault() {
 func (m *KConnOpt) VerifyAndSetDefault() {
 	if err := m.Verify() ; nil != err {
 		m.SetDefault()
-		klog.LogWarn( "KConnOpt.Verify() failed and set default : %s", err.Error())
+		klog.LogWarn("KConnOpt.Verify() failed and set default : %s", err.Error())
 	}
 }
 
-func (m *KConnOpt) Verify() ( err error ) {
+func (m *KConnOpt) Verify() (err error) {
 
 	if nil == m.Handler {
 		err = errors.New("KConnOpt.Verify() Handler is nil ")
@@ -125,7 +125,7 @@ func (m *KConnOpt) Verify() ( err error ) {
 	}
 
 	if time.Duration(time.Hour*1) < m.KeepAliveTime {
-		klog.LogWarn("KConnOpt.Verify() KeepAliveTime too long : %v milisec", m.KeepAliveTime )
+		klog.LogWarn("KConnOpt.Verify() KeepAliveTime too long : %v milisec", m.KeepAliveTime)
 	}
 
 	if 0 >= m.PacketChanMaxSend || 1000 < m.PacketChanMaxSend {

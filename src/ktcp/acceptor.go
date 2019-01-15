@@ -100,7 +100,7 @@ func (m *Acceptor) Start() (err error) {
 						klog.MakeFatalFile("Server.Start() connection publishing recovered : %v", rc)
 					}
 				}()
-				connId 	:= m.newConnSeqId()
+				connId 	:= m.newConnID()
 				tmpConn := newConn(conn, connId, &connOpt)
 				tmpConn.Start()
 			})
@@ -108,7 +108,7 @@ func (m *Acceptor) Start() (err error) {
 	}
 }
 
-func (m *Acceptor) newConnSeqId() (seq uint64) {
+func (m *Acceptor) newConnID() (seq uint64) {
 	seq = atomic.AddUint64(&m.connIDSeq, 1)
 	return
 }
