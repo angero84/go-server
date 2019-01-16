@@ -1,6 +1,7 @@
 package ktcp
 
 import (
+	"kprotocol"
 	"net"
 	"fmt"
 	"sync"
@@ -31,8 +32,18 @@ func NewKClient(cliOpt *KClientOpt, connOpt *KConnOpt, connhOpt *KConnHandleOpt)
 		return
 	}
 
+	if nil == connOpt {
+		connOpt = &KConnOpt{}
+		connOpt.SetDefault()
+	}
+
 	err = connOpt.Verify()
 	if nil != err {
+		return
+	}
+
+	if nil == connhOpt {
+		err = errors.New("NewKClient() connhOpt is nil")
 		return
 	}
 
@@ -55,8 +66,8 @@ func NewKClient(cliOpt *KClientOpt, connOpt *KConnOpt, connhOpt *KConnHandleOpt)
 
 func (m *KClient) StopGoRoutineWait() (err error) {
 
-	if nil != m.kconn {
-		m.kconn.StopGoRoutineWait()
+	if kconn := m.kconn ; nil != kconn {
+		kconn.StopGoRoutineWait()
 	}
 	m.KObject.StopGoRoutineWait()
 	return
@@ -64,8 +75,8 @@ func (m *KClient) StopGoRoutineWait() (err error) {
 
 func (m *KClient) StopGoRoutineImmediately() (err error) {
 
-	if nil != m.kconn {
-		m.kconn.StopGoRoutineImmediately()
+	if kconn := m.kconn ; nil != kconn {
+		kconn.StopGoRoutineImmediately()
 	}
 	m.KObject.StopGoRoutineImmediately()
 	return
@@ -92,20 +103,50 @@ func (m *KClient) ConnectAsync(callback KClientCallBack){
 
 func (m *KClient) Disconnect() {
 
-	if nil != m.kconn {
-		m.kconn.Disconnect(true)
-		m.kconn = nil
+	if kconn := m.kconn ; nil != kconn {
+		kconn.Disconnect(true)
 	}
+}
+
+func (m *KClient) Send(p kprotocol.IKPacket) (err error) {
+
+	if false == m.connected() {
+		err = errors.New(fmt.Sprintf("[id:%d] KClient.Send() Not connected", m.clientOpt.ID))
+		return
+	}
+
+	if kconn := m.kconn ; nil != kconn {
+		err = kconn.Send(p)
+	} else {
+		err = errors.New(fmt.Sprintf("[id:%d] KClient.Send() kconn is nil", m.clientOpt.ID))
+	}
+
+	return
+}
+
+func (m *KClient) SendWithTimeout(p kprotocol.IKPacket, timeout time.Duration) (err error) {
+
+	if false == m.connected() {
+		err = errors.New(fmt.Sprintf("[id:%d] KClient.SendWithTimeout() Not connected", m.clientOpt.ID))
+		return
+	}
+
+	if kconn := m.kconn ; nil != kconn {
+		err = kconn.SendWithTimeout(p, timeout)
+	} else {
+		err = errors.New(fmt.Sprintf("[id:%d] KClient.SendWithTimeout() kconn is nil", m.clientOpt.ID))
+	}
+
+	return
 }
 
 func (m *KClient) connected() bool {
 
-	kconn := m.kconn
-	if nil == kconn {
+	if kconn := m.kconn ; nil == kconn {
 		return false
+	} else {
+		return false == kconn.Disconnected()
 	}
-
-	return false == kconn.Disconnected()
 }
 
 func (m *KClient) isConnecting() bool {
@@ -133,11 +174,12 @@ func (m *KClient) connect(callback KClientCallBack) (err error){
 
 	atomic.StoreUint32(&m.connecting, 1)
 	defer func() {
+		if rc := recover() ; nil != rc {
+			err = errors.New(fmt.Sprintf("[id:%d] KClient.connect() recovered : %v", m.clientOpt.ID, rc))
+		}
 		atomic.StoreUint32(&m.connecting, 0)
 		if nil == err && nil != m.kconn {
 			m.kconn.Start()
-		} else {
-			m.kconn = nil
 		}
 	}()
 
@@ -153,6 +195,9 @@ func (m *KClient) connect(callback KClientCallBack) (err error){
 		return
 	}
 
+	if kconn := m.kconn ; nil != kconn {
+		kconn.Disconnect(true)
+	}
 	m.kconn = newKConn(conn, m.clientOpt.ID, m.connOpt, m.connHandleOpt)
 
 	return

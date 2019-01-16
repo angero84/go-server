@@ -127,7 +127,6 @@ func (m *KConn) Send(p kprotocol.IKPacket) (err error)  {
 
 }
 
-// AsyncWritePacket async writes a packet, this method will never block
 func (m *KConn) SendWithTimeout(p kprotocol.IKPacket, timeout time.Duration) (err error) {
 
 	if m.Disconnected() {

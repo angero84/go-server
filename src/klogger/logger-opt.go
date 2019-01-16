@@ -23,12 +23,13 @@ func (m *KLogFileOpt) SetDefault() {
 	m.ShiftType			= KLogFileShiftType_Day
 	m.RootDirectoryName	= "log"
 	m.Prefix			= "default"
+	println("!!!---> KLogFileOpt.SetDefault() Called")
 }
 
 func (m *KLogFileOpt) VerifyAndSetDefault() {
 	if err := m.Verify() ; nil != err {
+		println(fmt.Sprintf("!!!---> KLogFileOpt.Verify() Failed : %s", err.Error()))
 		m.SetDefault()
-		println(fmt.Sprintf("!!!---> KLogFileOpt Verify failed and set default : %s", err.Error()))
 	}
 
 }

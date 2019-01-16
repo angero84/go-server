@@ -24,6 +24,11 @@ type kLogFile struct {
 
 func NewKLogFile(opt *KLogFileOpt) (logfile *kLogFile, err error) {
 
+	if nil == opt {
+		opt = &KLogFileOpt{}
+		opt.SetDefault()
+	}
+
 	err = opt.Verify()
 	if nil != err {
 		return

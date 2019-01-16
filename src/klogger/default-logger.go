@@ -66,6 +66,11 @@ type kDefaultLogger struct {
 
 func NewKDefaultLogger(opt *KDefaultLoggerOpt) (kdlogger *kDefaultLogger, err error) {
 
+	if nil == opt {
+		opt = &KDefaultLoggerOpt{}
+		opt.SetDefault()
+	}
+
 	err = opt.Verify()
 	if nil != err {
 		return

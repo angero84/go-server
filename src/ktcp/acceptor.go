@@ -1,6 +1,7 @@
 package ktcp
 
 import (
+	"errors"
 	"net"
 	"time"
 	"fmt"
@@ -11,7 +12,7 @@ import (
 	klog 		"klogger"
 )
 
-type Acceptor struct {
+type KAcceptor struct {
 	*kobject.KObject
 	acceptorOpt		*KAcceptorOpt
 	connHandleOpt	*KConnHandleOpt
@@ -20,7 +21,17 @@ type Acceptor struct {
 	connIDSeq		uint64
 }
 
-func NewAcceptor(port uint32, accOpt *KAcceptorOpt, connhOpt *KConnHandleOpt ) (acceptor *Acceptor, err error) {
+func NewKAcceptor(port uint32, accOpt *KAcceptorOpt, connhOpt *KConnHandleOpt ) (acceptor *KAcceptor, err error) {
+
+	if nil == accOpt {
+		accOpt = &KAcceptorOpt{}
+		accOpt.SetDefault()
+	}
+
+	if nil == connhOpt {
+		err = errors.New("NewKAcceptor() connhOpt is nil")
+		return
+	}
 
 	err = accOpt.Verify()
 	if nil != err {
@@ -32,7 +43,7 @@ func NewAcceptor(port uint32, accOpt *KAcceptorOpt, connhOpt *KConnHandleOpt ) (
 		return
 	}
 
-	acceptor = &Acceptor{
+	acceptor = &KAcceptor{
 		KObject:		kobject.NewKObject("Acceptor"),
 		acceptorOpt:	accOpt,
 		connHandleOpt:	connhOpt,
@@ -42,7 +53,7 @@ func NewAcceptor(port uint32, accOpt *KAcceptorOpt, connhOpt *KConnHandleOpt ) (
 	return
 }
 
-func (m *Acceptor) Start() (err error) {
+func (m *KAcceptor) Start() (err error) {
 
 	var tcpAddr *net.TCPAddr
 	tcpAddr, err = net.ResolveTCPAddr("tcp4", fmt.Sprintf(":%d", m.port))
@@ -96,13 +107,13 @@ func (m *Acceptor) Start() (err error) {
 	}
 }
 
-func (m *Acceptor) newConnID() (seq uint64) {
+func (m *KAcceptor) newConnID() (seq uint64) {
 	seq = atomic.AddUint64(&m.connIDSeq, 1)
 	return
 }
 
 
-func (m *Acceptor) reporting() {
+func (m *KAcceptor) reporting() {
 
 	defer func() {
 		if rc := recover() ; nil != rc {

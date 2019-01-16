@@ -11,11 +11,13 @@ type KContainer struct {
 	mutex			sync.Mutex
 }
 
-func NewKContainer() *KContainer {
+func NewKContainer() (obj *KContainer, err error) {
 
-	return &KContainer{
+	obj = &KContainer{
 		objects:		make(map[uint64]IKContainer),
 	}
+
+	return
 }
 
 func (m *KContainer) Add(object IKContainer) (err error) {

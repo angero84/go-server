@@ -18,12 +18,13 @@ func (m *KAcceptorOpt) SetDefault() {
 	m.ConnOpt.SetDefault()
 	m.AcceptTimeout			= 300000
 	m.ReportingIntervalTime	= 10000
+	klog.LogWarn("KAcceptorOpt.SetDefault() Called")
 }
 
 func (m *KAcceptorOpt) VerifyAndSetDefault() {
 	if err := m.Verify() ; nil != err {
+		klog.LogWarn("KAcceptorOpt.Verify() Failed : %s", err.Error())
 		m.SetDefault()
-		klog.LogWarn("KAcceptorOpt.Verify() failed and set default : %s", err.Error())
 	}
 }
 
@@ -64,12 +65,13 @@ func (m *KConnOpt) SetDefault() {
 	m.LingerTime			= 2000
 	m.NoDelay				= true
 	m.UseLinger				= true
+	klog.LogWarn("KConnOpt.SetDefault() Called")
 }
 
 func (m *KConnOpt) VerifyAndSetDefault() {
 	if err := m.Verify() ; nil != err {
+		klog.LogWarn("KConnOpt.Verify() Failed : %s", err.Error())
 		m.SetDefault()
-		klog.LogWarn("KConnOpt.Verify() failed and set default : %s", err.Error())
 	}
 }
 
@@ -108,18 +110,6 @@ type KConnHandleOpt struct {
 	Protocol				kprotocol.IKProtocol
 }
 
-func (m *KConnHandleOpt) SetDefault() {
-	m.Handler				= nil
-	m.Protocol				= nil
-}
-
-func (m *KConnHandleOpt) VerifyAndSetDefault() {
-	if err := m.Verify() ; nil != err {
-		m.SetDefault()
-		klog.LogWarn("KConnHandleOpt.Verify() failed and set default : %s", err.Error())
-	}
-}
-
 func (m *KConnHandleOpt) Verify() (err error) {
 
 	if nil == m.Handler {
@@ -143,22 +133,12 @@ type KClientOpt struct {
 	ReconnectIntervalTime	uint32
 }
 
-func (m *KClientOpt) SetDefault() {
-	m.ID					= 0
-	m.TargetRemoteIP		= ""
-	m.TargetPort			= 0
-	m.Reconnect				= true
-	m.ReconnectIntervalTime = 5000
-}
-
-func (m *KClientOpt) VerifyAndSetDefault() {
-	if err := m.Verify() ; nil != err {
-		m.SetDefault()
-		klog.LogWarn("KClientOpt.Verify() failed and set default : %s", err.Error())
-	}
-}
-
 func (m *KClientOpt) Verify() (err error) {
+
+	if "" == m.TargetRemoteIP {
+		err = errors.New(fmt.Sprintf("KClientOpt.Verify() TargetRemoteIP is length 0"))
+		return
+	}
 
 	if 1000 > m.ReconnectIntervalTime {
 		err = errors.New(fmt.Sprintf("KClientOpt.Verify() ReconnectIntervalTime too short : %d milisec", m.ReconnectIntervalTime))
