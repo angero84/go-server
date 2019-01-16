@@ -8,32 +8,34 @@ import (
 
 
 	"kobject"
-	"kprotocol"
 	klog 		"klogger"
 )
 
 type Acceptor struct {
 	*kobject.KObject
-	handler		IKConnHandler
-	protocol	kprotocol.IKProtocol
-	opt			*KAcceptorOpt
-	port		uint32
+	acceptorOpt		*KAcceptorOpt
+	connHandleOpt	*KConnHandleOpt
+	port			uint32
 
-	connIDSeq	uint64
+	connIDSeq		uint64
 }
 
-func NewAcceptor(port uint32, opt *KAcceptorOpt, handler IKConnHandler, protocol kprotocol.IKProtocol) (srv *Acceptor, err error) {
+func NewAcceptor(port uint32, accOpt *KAcceptorOpt, connhOpt *KConnHandleOpt ) (acceptor *Acceptor, err error) {
 
-	err = opt.Verify()
+	err = accOpt.Verify()
 	if nil != err {
 		return
 	}
 
-	srv = &Acceptor{
-		KObject:	kobject.NewKObject("Acceptor"),
-		handler:	handler,
-		protocol:	protocol,
-		opt:		opt,
+	err = connhOpt.Verify()
+	if nil != err {
+		return
+	}
+
+	acceptor = &Acceptor{
+		KObject:		kobject.NewKObject("Acceptor"),
+		acceptorOpt:	accOpt,
+		connHandleOpt:	connhOpt,
 		port:		port,
 	}
 
@@ -61,21 +63,7 @@ func (m *Acceptor) Start() (err error) {
 
 	m.StartGoRoutine(m.reporting)
 
-	acceptTimeout := time.Duration(m.opt.AcceptTimeout)*time.Millisecond
-	connOpt := KConnOpt{
-		Handler:				m.handler,
-		Protocol:				m.protocol,
-		KeepAliveTime:			time.Duration(m.opt.KeepAliveTime)*time.Millisecond,
-		PacketChanMaxSend:		m.opt.PacketChanMaxSend,
-		PacketChanMaxReceive:	m.opt.PacketChanMaxReceive,
-		LingerTime:				m.opt.LingerTime,
-		NoDelay:				m.opt.NoDelay,
-		UseLinger:				m.opt.UseLinger,
-	}
-	err = connOpt.Verify()
-	if nil != err {
-		return
-	}
+	acceptTimeout := time.Duration(m.acceptorOpt.AcceptTimeout)*time.Millisecond
 
 	for {
 
@@ -101,7 +89,7 @@ func (m *Acceptor) Start() (err error) {
 					}
 				}()
 				connId 	:= m.newConnID()
-				tmpConn := newConn(conn, connId, &connOpt)
+				tmpConn := newKConn(conn, connId, &m.acceptorOpt.ConnOpt, m.connHandleOpt )
 				tmpConn.Start()
 			})
 
@@ -122,7 +110,7 @@ func (m *Acceptor) reporting() {
 		}
 	}()
 
-	interval := time.Duration(m.opt.ReportingIntervalTime)*time.Millisecond
+	interval := time.Duration(m.acceptorOpt.ReportingIntervalTime)*time.Millisecond
 
 	if 0 >= interval {
 		return

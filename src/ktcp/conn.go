@@ -46,7 +46,7 @@ type KConn struct {
 	disconnectFlag		int32
 }
 
-func newConn(conn *net.TCPConn, id uint64, connOpt *KConnOpt) *KConn {
+func newKConn(conn *net.TCPConn, id uint64, connOpt *KConnOpt, connHandleOpt *KConnHandleOpt) *KConn {
 
 	host, port, err := net.SplitHostPort(conn.RemoteAddr().String())
 	if nil != err {
@@ -57,7 +57,7 @@ func newConn(conn *net.TCPConn, id uint64, connOpt *KConnOpt) *KConn {
 	conn.SetNoDelay(connOpt.NoDelay)
 	if 0 < connOpt.KeepAliveTime {
 		conn.SetKeepAlive(true)
-		conn.SetKeepAlivePeriod(connOpt.KeepAliveTime)
+		conn.SetKeepAlivePeriod(time.Duration(connOpt.KeepAliveTime)*time.Millisecond)
 	} else {
 		conn.SetKeepAlive(false)
 	}
@@ -72,8 +72,8 @@ func newConn(conn *net.TCPConn, id uint64, connOpt *KConnOpt) *KConn {
 		KObject:			kobject.NewKObject("KConn"),
 		id:					id,
 		rawConn:			conn,
-		handler:			connOpt.Handler,
-		protocol:			connOpt.Protocol,
+		handler:			connHandleOpt.Handler,
+		protocol:			connHandleOpt.Protocol,
 		packetChanSend:		make(chan kprotocol.IKPacket, connOpt.PacketChanMaxSend),
 		packetChanReceive:	make(chan kprotocol.IKPacket, connOpt.PacketChanMaxReceive),
 		remoteHostIP:		host,

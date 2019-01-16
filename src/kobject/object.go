@@ -2,6 +2,7 @@ package kobject
 
 import (
 	"sync"
+	"sync/atomic"
 )
 
 type KObject struct {
@@ -9,6 +10,7 @@ type KObject struct {
 	obj			chan struct{}
 	stopOnce	sync.Once
 	wg			sync.WaitGroup
+	stop 		uint32
 }
 
 func NewKObject(name string) *KObject {
@@ -20,6 +22,8 @@ func (m *KObject) StopGoRoutineRequest() <-chan struct{}	{ return m.obj }
 
 func (m *KObject) StopGoRoutineWait() (err error) {
 
+	atomic.StoreUint32(&m.stop, 1)
+
 	m.stopOnce.Do(func() {
 		close(m.obj)
 	})
@@ -30,6 +34,8 @@ func (m *KObject) StopGoRoutineWait() (err error) {
 
 func (m *KObject) StopGoRoutineImmediately() (err error) {
 
+	atomic.StoreUint32(&m.stop, 1)
+
 	m.stopOnce.Do(func() {
 		close(m.obj)
 	})
@@ -38,6 +44,11 @@ func (m *KObject) StopGoRoutineImmediately() (err error) {
 }
 
 func (m *KObject) StartGoRoutine(fn func()) {
+
+	if 1 ==  atomic.LoadUint32(&m.stop) {
+		return
+	}
+
 	m.wg.Add(1)
 	go func() {
 		fn()

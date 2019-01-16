@@ -39,10 +39,12 @@ func main() {
 		return
 	}
 
-	handler := khandler.NewKConnHandlerEcho()
-	protocol := &kprotocol.KProtocolEcho{}
+	connhOpt := &ktcp.KConnHandleOpt{
+		Handler:	khandler.NewKConnHandlerEcho(),
+		Protocol:	&kprotocol.KProtocolEcho{},
+	}
 
-	acceptor, err := ktcp.NewAcceptor(serverConfig.Port, &serverConfig.AcceptorOpt, handler, protocol)
+	acceptor, err := ktcp.NewAcceptor(serverConfig.Port, &serverConfig.AcceptorOpt, connhOpt )
 	if nil != err {
 		klog.LogWarn("Failed to create acceptor : %s", err.Error())
 		return

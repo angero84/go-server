@@ -4,6 +4,8 @@ import (
 	"kprotocol"
 )
 
+type KClientCallBack func(client *KClient, err error)
+
 type IKConnHandler interface {
 	OnConnected		(*KConn)
 
