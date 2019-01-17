@@ -4,7 +4,6 @@ import (
 	"time"
 	"os"
 	"fmt"
-	"sync"
 	"errors"
 
 	"kobject"
@@ -17,7 +16,6 @@ type kLogFile struct {
 	rootDirectoryName	string
 	prefix				string
 
-	mutex				sync.Mutex
 	curDay				int
 	curHour				int
 }
@@ -53,8 +51,8 @@ func (m *kLogFile) File() *os.File	{ return m.file }
 
 func (m *kLogFile) CheckFileShift() (file *os.File, err error) {
 
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Lock()
+	defer m.Unlock()
 
 	now		:= time.Now()
 	day		:= now.Day()

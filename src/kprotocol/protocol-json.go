@@ -39,7 +39,7 @@ func (m *KPacketJson) Serialize() []byte {
 type KProtocolJson struct {
 }
 
-func (m *KProtocolJson) ReadPacket(conn *net.TCPConn) (IKPacket, error) {
+func (m *KProtocolJson) ReadKPacket(conn *net.TCPConn) (IKPacket, error) {
 
 	lengthBytes := make([]byte, 4)
 	length 		:= uint32(0)

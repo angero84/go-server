@@ -40,8 +40,8 @@ func main() {
 	}
 
 	connhOpt := &ktcp.KConnHandleOpt{
-		Handler:	khandler.NewKConnHandlerEcho(),
-		Protocol:	&kprotocol.KProtocolEcho{},
+		Handler:	khandler.NewKConnHandlerJson(khandler.NewProcessorExampleJson()),
+		Protocol:	&kprotocol.KProtocolJson{},
 	}
 
 	acceptor, err := ktcp.NewKAcceptor(serverConfig.Port, &serverConfig.AcceptorOpt, connhOpt )
@@ -53,7 +53,7 @@ func main() {
 	chSig := make(chan os.Signal)
 
 	go func () {
-		err = acceptor.Start()
+		err = acceptor.Listen()
 		if nil != err {
 			klog.LogFatal("Failed start acceptor : %s", err.Error())
 			chSig <- syscall.SIGTERM
@@ -64,6 +64,6 @@ func main() {
 	signal.Notify(chSig, syscall.SIGINT, syscall.SIGTERM)
 	fmt.Println("Signal: ", <-chSig)
 
-	acceptor.StopGoRoutineWait()
+	acceptor.StopGoRoutine()
 	klog.LogInfo("Main end")
 }

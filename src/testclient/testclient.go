@@ -1,41 +1,81 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net"
-	"time"
+
+	klog "klogger"
+
 	"kprotocol"
+	"ktcp"
+	"khandler"
+	"fmt"
+	"sync"
 )
 
+
+
 func main() {
-	tcpAddr, err := net.ResolveTCPAddr("tcp4", "127.0.0.1:8989")
-	checkError(err)
-	conn, err := net.DialTCP("tcp", nil, tcpAddr)
-	checkError(err)
 
-	echoProtocol := &kprotocol.KProtocolEcho{}
+	cliOpt := &ktcp.KClientOpt{
+		ID:				0,
+		TargetRemoteIP:	"0.0.0.0",
+		TargetPort:		8989,
+		Reconnect:		true,
+		ReconnectIntervalTime: 5000,
+	}
 
-	// ping <--> pong
-	for i := 0; i < 3; i++ {
-		// write
-		conn.Write(kprotocol.NewKPacketEcho([]byte("hello"), false).Serialize())
+	connhOpt := &ktcp.KConnHandleOpt{
+		Handler:	khandler.NewKConnHandlerJson(khandler.NewProcessorExampleJson()),
+		Protocol:	&kprotocol.KProtocolJson{},
+	}
 
-		// read
-		p, err := echoProtocol.ReadKPacket(conn)
-		if err == nil {
-			echoPacket := p.(*kprotocol.KPacketEcho)
-			fmt.Printf("Server reply:[%v] [%v]\n", echoPacket.Length(), string(echoPacket.Body()))
+	client, err := ktcp.NewKClient(cliOpt, nil, connhOpt )
+	if nil != err {
+		klog.LogWarn("Create client failed : %s", err.Error())
+		return
+	}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := client.Connect()
+		if nil != err {
+			klog.LogWarn("Connect err : %s", err.Error())
+			return
 		}
+	}()
 
-		time.Sleep(2 * time.Second)
+	wg.Wait()
+
+	if client.Connected() {
+		cmd := ""
+
+		LOOP:
+		for {
+
+			fmt.Scanln(&cmd)
+
+			switch cmd {
+			case "exit":
+				break LOOP
+			case "disconnect":
+				client.Disconnect()
+			case "connect":
+				client.ConnectAsync(nil)
+			default:
+
+				chat := kprotocol.ProtocolJsonRequestChatting{}
+				chat.Chat = cmd
+				chat.ChatType = "[normal]"
+
+				err := client.Send(chat.MakePacket())
+				if nil != err {
+					klog.LogWarn("Send err : %s", err.Error())
+				}
+			}
+
+		}
 	}
 
-	conn.Close()
 }
 
-func checkError(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-}

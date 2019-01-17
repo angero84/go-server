@@ -1,19 +1,21 @@
-package kcontainer
+package container
 
 import (
-	"sync"
 	"errors"
 	"fmt"
+
+	kobject "kobject"
 )
 
 type KContainer struct {
+	*kobject.KObject
 	objects			map[uint64]IKContainer
-	mutex			sync.Mutex
 }
 
 func NewKContainer() (obj *KContainer, err error) {
 
 	obj = &KContainer{
+		KObject:		kobject.NewKObject("KContainer"),
 		objects:		make(map[uint64]IKContainer),
 	}
 
@@ -22,8 +24,8 @@ func NewKContainer() (obj *KContainer, err error) {
 
 func (m *KContainer) Add(object IKContainer) (err error) {
 
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Lock()
+	defer m.Unlock()
 
 	if _, exist := m.objects[object.ID()] ; false == exist {
 		m.objects[object.ID()] = object
@@ -36,8 +38,8 @@ func (m *KContainer) Add(object IKContainer) (err error) {
 
 func (m *KContainer) Remove(object IKContainer) (err error) {
 
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Lock()
+	defer m.Unlock()
 
 	if _, exist := m.objects[object.ID()] ; true == exist {
 		delete(m.objects, object.ID())
@@ -50,8 +52,8 @@ func (m *KContainer) Remove(object IKContainer) (err error) {
 
 func (m *KContainer) Find(id uint64) (object IKContainer) {
 
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Lock()
+	defer m.Unlock()
 
 	object, _ = m.objects[id]
 	return
@@ -59,8 +61,8 @@ func (m *KContainer) Find(id uint64) (object IKContainer) {
 
 func (m *KContainer) Count() (count int) {
 
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.Lock()
+	defer m.Unlock()
 
 	count = len(m.objects)
 	return

@@ -21,7 +21,6 @@ type KClient struct {
 	connHandleOpt	*KConnHandleOpt
 
 	startOnce		sync.Once
-	mutex 			sync.Mutex
 	connecting 		uint32
 }
 
@@ -59,26 +58,17 @@ func NewKClient(cliOpt *KClientOpt, connOpt *KConnOpt, connhOpt *KConnHandleOpt)
 		connHandleOpt:	connhOpt,
 	}
 
-	client.StartGoRoutine(client.reconnecting)
+	go client.reconnecting()
 
 	return
 }
 
-func (m *KClient) StopGoRoutineWait() (err error) {
+func (m *KClient) StopGoRoutine() (err error) {
 
 	if kconn := m.kconn ; nil != kconn {
-		kconn.StopGoRoutineWait()
+		kconn.StopGoRoutine()
 	}
-	m.KObject.StopGoRoutineWait()
-	return
-}
-
-func (m *KClient) StopGoRoutineImmediately() (err error) {
-
-	if kconn := m.kconn ; nil != kconn {
-		kconn.StopGoRoutineImmediately()
-	}
-	m.KObject.StopGoRoutineImmediately()
+	m.KObject.StopGoRoutine()
 	return
 }
 
@@ -95,9 +85,8 @@ func (m *KClient) Connect() (err error){
 
 func (m *KClient) ConnectAsync(callback KClientCallBack){
 
-	m.StartGoRoutine(func() {
-		m.connect(callback)
-	})
+	go m.connect(callback)
+
 	return
 }
 
@@ -212,21 +201,23 @@ func (m *KClient) reconnecting() {
 		}
 	}()
 
-	interval := time.Duration(m.clientOpt.ReconnectIntervalTime) * time.Millisecond
+	reconInterval := time.Duration(m.clientOpt.ReconnectIntervalTime) * time.Millisecond
+	reconTimer := time.NewTimer(reconInterval)
 
 	for {
 
 		select {
-		case <-m.StopGoRoutineRequest():
+		case <-m.StopGoRoutineSignal():
 			klog.LogDetail("[id:%d] KClient.reconnecting() StopGoRoutine sensed", m.clientOpt.ID)
 			return
-		case <-time.After(interval):
+		case <-reconTimer.C:
 			if m.clientOpt.Reconnect && false == m.connected() {
 				err := m.connect(nil)
 				if nil != err {
 					klog.LogWarn("[id:%d] KClient.reconnecting() connect error : %s", m.clientOpt.ID, err.Error())
 				}
 			}
+			reconTimer.Reset(reconInterval)
 		}
 
 	}

@@ -16,44 +16,28 @@ var instanceKDefaultLoggerOnce sync.Once
 
 func init() {
 
-	instanceKDefaultLoggerOnce.Do(func() {
+	instanceKDefaultLoggerOnce.Do(
+		func() {
 
-		println("---> KDefaultLogger auto initialization start")
+			println("---> KDefaultLogger auto initialization start")
 
-		tmpKDefaultLogger, err := NewKDefaultLogger(&KDefaultLoggerOpt{
-			LogTypeDepth:		KLogType_Debug,
-			LoggerName:			"default",
-			RootDirectoryName:	"log",
-			UseQueue:			false,
+			tmpKDefaultLogger, err := NewKDefaultLogger(&KDefaultLoggerOpt{
+				LogTypeDepth:		KLogType_Detail,
+				LoggerName:			"default",
+				RootDirectoryName:	"log",
+				UseQueue:			false,
+			})
+
+			if nil != err {
+				println("!!!---> Failed init KDefaultLogger : ", err.Error())
+				return
+			}
+
+			instanceKDefaultLogger = tmpKDefaultLogger
+
+			println("---> KDefaultLogger initialized")
+
 		})
-
-		if nil != err {
-			println("!!!---> Failed init KDefaultLogger : ", err.Error())
-			return
-		}
-
-		instanceKDefaultLogger = tmpKDefaultLogger
-
-		println("---> KDefaultLogger initialized")
-	})
-}
-
-func Init(opt *KDefaultLoggerOpt) {
-
-	instanceKDefaultLoggerOnce.Do(func() {
-
-		println("---> KDefaultLogger initialization start")
-
-		tmpDefaultLogger, err := NewKDefaultLogger( opt )
-		if nil != err {
-			println("!!!---> Failed init KDefaultLogger : ", err.Error())
-			return
-		}
-
-		instanceKDefaultLogger = tmpDefaultLogger
-
-		println("---> KDefaultLogger initialized")
-	})
 }
 
 type kDefaultLogger struct {
@@ -117,25 +101,14 @@ func NewKDefaultLogger(opt *KDefaultLoggerOpt) (kdlogger *kDefaultLogger, err er
 	return
 }
 
-func (m *kDefaultLogger) StopGoRoutineWait() (err error) {
+func (m *kDefaultLogger) StopGoRoutine() (err error) {
 
 	for _, r := range m.kLoggers {
-		r.StopGoRoutineWait()
+		r.StopGoRoutine()
 	}
-	m.kLogFile.StopGoRoutineWait()
+	m.kLogFile.StopGoRoutine()
 
-	m.KObject.StopGoRoutineWait()
-	return
-}
-
-func (m *kDefaultLogger) StopGoRoutineImmediately() (err error) {
-
-	for _, r := range m.kLoggers {
-		r.StopGoRoutineImmediately()
-	}
-	m.kLogFile.StopGoRoutineImmediately()
-
-	m.KObject.StopGoRoutineImmediately()
+	m.KObject.StopGoRoutine()
 	return
 }
 

@@ -157,7 +157,7 @@ func (m *KConn) SendWithTimeout(p kprotocol.IKPacket, timeout time.Duration) (er
 		select {
 			case m.packetChanSend <- p:
 				return
-			case <-m.StopGoRoutineRequest():
+			case <-m.StopGoRoutineSignal():
 				err = KConnErr{KConnErrType_Closed}
 				klog.LogDetail("[id:%d] KConn.SendWithTimeout() StopGoRoutine sensed", m.id)
 				return
@@ -180,9 +180,9 @@ func (m *KConn) Start() {
 			m.handler.OnConnected(m)
 		}
 
-		m.StartGoRoutine(m.dispatching)
-		m.StartGoRoutine(m.reading)
-		m.StartGoRoutine(m.writing)
+		go m.dispatching()
+		go m.reading()
+		go m.writing()
 	})
 }
 
@@ -195,7 +195,7 @@ func (m *KConn) disconnect (gracefully bool) {
 	}()
 
 	atomic.StoreInt32(&m.disconnectFlag, 1)
-	m.KObject.StopGoRoutineWait()
+	m.KObject.StopGoRoutine()
 
 	if gracefully {
 		close(m.packetChanSend)
@@ -228,7 +228,7 @@ func (m *KConn) reading() {
 	for {
 
 		select {
-			case <-m.StopGoRoutineRequest():
+			case <-m.StopGoRoutineSignal():
 				klog.LogDetail("[id:%d] KConn.reading() StopGoRoutine sensed", m.id)
 				return
 			default:
@@ -258,7 +258,7 @@ func (m *KConn) writing() {
 
 	for {
 		select {
-		case <-m.StopGoRoutineRequest():
+		case <-m.StopGoRoutineSignal():
 			klog.LogDetail("[id:%d] KConn.writing() StopGoRoutine sensed", m.id)
 			return
 		case p := <-m.packetChanSend:
@@ -285,7 +285,7 @@ func (m *KConn) dispatching() {
 
 	for {
 		select {
-		case <-m.StopGoRoutineRequest():
+		case <-m.StopGoRoutineSignal():
 			klog.LogDetail("[id:%d] KConn.dispatching() StopGoRoutine sensed", m.id)
 			return
 		case p := <-m.packetChanReceive:

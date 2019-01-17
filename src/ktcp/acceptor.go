@@ -50,10 +50,12 @@ func NewKAcceptor(port uint32, accOpt *KAcceptorOpt, connhOpt *KConnHandleOpt ) 
 		port:		port,
 	}
 
+	go acceptor.reporting()
+
 	return
 }
 
-func (m *KAcceptor) Start() (err error) {
+func (m *KAcceptor) Listen() (err error) {
 
 	var tcpAddr *net.TCPAddr
 	tcpAddr, err = net.ResolveTCPAddr("tcp4", fmt.Sprintf(":%d", m.port))
@@ -68,18 +70,20 @@ func (m *KAcceptor) Start() (err error) {
 	}
 
 	defer func() {
+		if rc := recover() ; nil != rc {
+			klog.LogFatal("KAcceptor.Listen() recovered : %v", rc)
+			err = errors.New(fmt.Sprintf("KAcceptor.Listen() recovered : %v", rc))
+		}
 		tcpListener.Close()
 	}()
-
-
-	m.StartGoRoutine(m.reporting)
 
 	acceptTimeout := time.Duration(m.acceptorOpt.AcceptTimeout)*time.Millisecond
 
 	for {
 
 		select {
-		case <-m.StopGoRoutineRequest():
+		case <-m.StopGoRoutineSignal():
+			err = errors.New("KAcceptor.Listen() sensed StopGoRoutineRequest")
 			return
 		default:
 		}
@@ -92,26 +96,30 @@ func (m *KAcceptor) Start() (err error) {
 			continue
 		}
 
-		m.StartGoRoutine(
-			func() {
-				defer func() {
-					if rc := recover() ; nil != rc {
-						klog.MakeFatalFile("Server.Start() connection publishing recovered : %v", rc)
+		go func() {
+			var tmpConn *KConn
+
+			defer func() {
+				if rc := recover() ; nil != rc {
+					klog.LogFatal("KAcceptor.Listen() connection publishing recovered : %v", rc)
+					//klog.MakeFatalFile("KAcceptor.Listen() connection publishing recovered : %v", rc)
+					if nil != tmpConn {
+						tmpConn.Disconnect(true)
 					}
-				}()
-				connId 	:= m.newConnID()
-				tmpConn := newKConn(conn, connId, &m.acceptorOpt.ConnOpt, m.connHandleOpt )
-				tmpConn.Start()
-			})
+				}
+			}()
+			connId 	:= m.newConnID()
+			tmpConn = newKConn(conn, connId, &m.acceptorOpt.ConnOpt, m.connHandleOpt )
+			tmpConn.Start()
+		}()
 
 	}
 }
 
-func (m *KAcceptor) newConnID() (seq uint64) {
-	seq = atomic.AddUint64(&m.connIDSeq, 1)
+func (m *KAcceptor) newConnID() (id uint64) {
+	id = atomic.AddUint64(&m.connIDSeq, 1)
 	return
 }
-
 
 func (m *KAcceptor) reporting() {
 
@@ -130,12 +138,12 @@ func (m *KAcceptor) reporting() {
 	timer := time.NewTimer(interval)
 
 	for {
+
 		select {
-		case <-m.StopGoRoutineRequest():
+		case <-m.StopGoRoutineSignal():
 			klog.LogDetail("Server.reporting() StopGoRoutine sensed")
 			return
 		case <-timer.C:
-
 			timer.Reset(interval)
 		}
 

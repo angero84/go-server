@@ -2,58 +2,38 @@ package kobject
 
 import (
 	"sync"
-	"sync/atomic"
 )
 
 type KObject struct {
 	name		string
-	obj			chan struct{}
+	stopSignal	chan struct{}
 	stopOnce	sync.Once
-	wg			sync.WaitGroup
-	stop 		uint32
+	mutex 		sync.Mutex
 }
 
 func NewKObject(name string) *KObject {
-	return &KObject{name:name, obj:make(chan struct{})}
+	return &KObject{
+			name:		name,
+			stopSignal	:make(chan struct{}),
+		}
 }
 
-func (m *KObject) Name() 				string 				{ return m.name }
-func (m *KObject) StopGoRoutineRequest() <-chan struct{}	{ return m.obj }
+func (m *KObject) Name()					string 			{ return m.name }
+func (m *KObject) StopGoRoutineSignal()		<-chan struct{}	{ return m.stopSignal }
 
-func (m *KObject) StopGoRoutineWait() (err error) {
+func (m *KObject) Lock()		{ m.mutex.Lock() }
+func (m *KObject) Unlock()		{ m.mutex.Unlock() }
 
-	atomic.StoreUint32(&m.stop, 1)
+func (m *KObject) StopGoRoutine() {
 
-	m.stopOnce.Do(func() {
-		close(m.obj)
-	})
-
-	m.wg.Wait()
-	return
-}
-
-func (m *KObject) StopGoRoutineImmediately() (err error) {
-
-	atomic.StoreUint32(&m.stop, 1)
-
-	m.stopOnce.Do(func() {
-		close(m.obj)
-	})
+	m.stopOnce.Do(
+		func() {
+			close(m.stopSignal)
+		})
 
 	return
 }
 
-func (m *KObject) StartGoRoutine(fn func()) {
 
-	if 1 ==  atomic.LoadUint32(&m.stop) {
-		return
-	}
-
-	m.wg.Add(1)
-	go func() {
-		fn()
-		m.wg.Done()
-	}()
-}
 
 

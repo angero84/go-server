@@ -7,7 +7,7 @@ import (
 
 func main() {
 
-	tempLogger, _ := klogger.NewKDefaultLogger( &klogger.KDefaultLoggerOpt{
+	tempLogger, _ := klogger.NewKDefaultLogger(&klogger.KDefaultLoggerOpt{
 		LoggerName:        "logtest",
 		RootDirectoryName: "log",
 		LogTypeDepth:      klogger.KLogType_Debug,
@@ -18,7 +18,7 @@ func main() {
 
 	go func() {
 
-		defer tempLogger.StopGoRoutineWait()
+		defer tempLogger.StopGoRoutine()
 
 		number := 0
 		timer := kutil.NewKTimer()

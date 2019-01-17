@@ -4,40 +4,43 @@ import (
 	"kprotocol"
 	"ktcp"
 	klog 		"klogger"
+	"kobject"
 )
 
 type KConnHandlerJson struct{
+	*kobject.KObject
 	handlers		map[uint32]KConnHandlerFunc
 }
 
 func NewKConnHandlerJson(handlers map[uint32]KConnHandlerFunc) *KConnHandlerJson {
 
-	callback := &KConnHandlerJson{
+	handler := &KConnHandlerJson{
+		KObject:		kobject.NewKObject("KConnHandlerJson"),
 		handlers: 		handlers,
 	}
 
-	return callback
+	return handler
 }
 
 func (m *KConnHandlerJson) OnConnected(c *ktcp.KConn) {
 
-	klog.LogDebug( "KConnCallbackJson.OnConnected() - [id:%d][ip:%s]", c.ID(), c.RemoteHostIP())
+	klog.LogDebug( "KConnHandlerJson.OnConnected() - [id:%d][ip:%s]", c.ID(), c.RemoteHostIP())
 }
 
 func (m *KConnHandlerJson) OnMessage(c *ktcp.KConn, p kprotocol.IKPacket) {
 
-	packetid := p.PacketID()
-	klog.LogDetail( "KConnCallbackJson.OnMessage() - [id:%d][ip:%s][packetid:%d]", c.ID(), c.RemoteHostIP, packetid)
-	if fn, exist := m.handlers[packetid] ; exist {
+	packetID := p.PacketID()
+	klog.LogDetail( "KConnHandlerJson.OnMessage() - [id:%d][ip:%s][packetid:%d]", c.ID(), c.RemoteHostIP(), packetID)
+	if fn, exist := m.handlers[packetID] ; exist {
 		fn(c, p)
 	} else {
-		klog.LogWarn( "KConnCallbackJson.OnMessage() - [id:%d][ip:%s][packetid:%d] Not registered Handler for the packetid", c.ID(), c.RemoteHostIP(), packetid)
+		klog.LogWarn( "KConnHandlerJson.OnMessage() - [id:%d][ip:%s][packetid:%d] Not registered Handler for the packetid", c.ID(), c.RemoteHostIP(), packetID)
 	}
 
 }
 
 func (m *KConnHandlerJson) OnDisconnected(c *ktcp.KConn) {
 
-	klog.LogDebug( "KConnCallbackJson.OnDisconnected() - [id:%d][ip:%s]", c.ID(), c.RemoteHostIP())
+	klog.LogDebug( "KConnHandlerJson.OnDisconnected() - [id:%d][ip:%s]", c.ID(), c.RemoteHostIP())
 }
 

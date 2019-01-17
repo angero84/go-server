@@ -4,13 +4,19 @@ import (
 	"kprotocol"
 	"ktcp"
 	klog "klogger"
+	"kobject"
 )
 
 type KConnHandlerEcho struct{
+	*kobject.KObject
 }
 
-func NewKConnHandlerEcho() *KConnHandlerEcho {
-	return &KConnHandlerEcho{}
+func NewKConnHandlerEcho() (handler *KConnHandlerEcho) {
+
+	handler = &KConnHandlerEcho{
+		KObject:		kobject.NewKObject("KConnHandlerEcho"),
+	}
+	return
 }
 
 func (m *KConnHandlerEcho) OnConnected(c *ktcp.KConn) {
@@ -22,7 +28,7 @@ func (m *KConnHandlerEcho) OnMessage(c *ktcp.KConn, p kprotocol.IKPacket) {
 
 	echoPacket := p.(*kprotocol.KPacketEcho)
 	klog.LogDetail("OnMessage:[%v] [%v]\n", echoPacket.Length(), string(echoPacket.Body()))
-	c.Send(kprotocol.NewKPacketEcho(echoPacket.Serialize(), true))
+	//c.Send(kprotocol.NewKPacketEcho(echoPacket.Serialize(), true))
 
 }
 

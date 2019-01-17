@@ -26,7 +26,7 @@ func NewkLogger(writer *io.Writer, prefix string, useQueue bool) (klogger *kLogg
 		useQueue:	useQueue,
 	}
 
-	klogger.StartGoRoutine(klogger.logging)
+	go klogger.logging()
 
 	return
 }
@@ -99,7 +99,7 @@ func (m *kLogger) logging() {
 
 	for {
 		select {
-		case <-m.StopGoRoutineRequest():
+		case <-m.StopGoRoutineSignal():
 			//println("logging closed!!", m.Name())
 			return
 		case fn := <-m.queue:
