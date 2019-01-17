@@ -55,7 +55,12 @@ func (m *KContainer) Find(id uint64) (object IKContainer) {
 	m.Lock()
 	defer m.Unlock()
 
-	object, _ = m.objects[id]
+	exist := false
+	object, exist = m.objects[id]
+	if false == exist {
+		object = nil
+	}
+
 	return
 }
 
