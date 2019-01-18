@@ -18,7 +18,7 @@ func main() {
 
 	go func() {
 
-		defer tempLogger.StopGoRoutine()
+		defer tempLogger.Destroy()
 
 		number := 0
 		timer := kutil.NewKTimer()

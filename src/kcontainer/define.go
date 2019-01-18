@@ -1,4 +1,4 @@
-package container
+package kcontainer
 
 
 type IKContainer interface {

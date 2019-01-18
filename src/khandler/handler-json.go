@@ -10,6 +10,7 @@ import (
 type KConnHandlerJson struct{
 	*kobject.KObject
 	handlers		map[uint32]KConnHandlerFunc
+	messageCount 	uint64
 }
 
 func NewKConnHandlerJson(handlers map[uint32]KConnHandlerFunc) *KConnHandlerJson {
@@ -21,6 +22,8 @@ func NewKConnHandlerJson(handlers map[uint32]KConnHandlerFunc) *KConnHandlerJson
 
 	return handler
 }
+
+func (m *KConnHandlerJson) MessageCount() uint64 { return m.messageCount }
 
 func (m *KConnHandlerJson) OnConnected(c *ktcp.KConn) {
 

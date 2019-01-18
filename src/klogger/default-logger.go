@@ -101,14 +101,14 @@ func NewKDefaultLogger(opt *KDefaultLoggerOpt) (kdlogger *kDefaultLogger, err er
 	return
 }
 
-func (m *kDefaultLogger) StopGoRoutine() (err error) {
+func (m *kDefaultLogger) Destroy() (err error) {
 
 	for _, r := range m.kLoggers {
-		r.StopGoRoutine()
+		r.Destroy()
 	}
-	m.kLogFile.StopGoRoutine()
+	m.kLogFile.Destroy()
 
-	m.KObject.StopGoRoutine()
+	m.KObject.Destroy()
 	return
 }
 
@@ -153,6 +153,15 @@ func (m *kDefaultLogger) checkLogFile() {
 	} else if nil != err {
 		println(fmt.Sprintf("!!!---> kDefaultLogger.checkLogFile() err : %s", err.Error()))
 	}
+}
+
+func SetDefaultLoggerInstance(kdlogger *kDefaultLogger) {
+
+	if nil != instanceKDefaultLogger {
+		instanceKDefaultLogger.Destroy()
+	}
+
+	instanceKDefaultLogger = kdlogger
 }
 
 func MakeFatalFile(format string, v ...interface{}) {

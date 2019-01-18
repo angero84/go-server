@@ -12,6 +12,8 @@ type IKConnHandler interface {
 	OnMessage		(*KConn, kprotocol.IKPacket)
 
 	OnDisconnected	(*KConn)
+
+	MessageCount	() uint64
 }
 
 type KConnErrType int8

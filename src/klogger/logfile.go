@@ -47,6 +47,15 @@ func NewKLogFile(opt *KLogFileOpt) (logfile *kLogFile, err error) {
 	return
 }
 
+func (m *kLogFile) Destroy() {
+
+	if nil != m.file {
+		m.file.Close()
+	}
+
+	m.KObject.Destroy()
+}
+
 func (m *kLogFile) File() *os.File	{ return m.file }
 
 func (m *kLogFile) CheckFileShift() (file *os.File, err error) {

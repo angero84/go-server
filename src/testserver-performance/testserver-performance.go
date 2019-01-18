@@ -13,6 +13,7 @@ import (
 	klog "klogger"
 	"kprotocol"
 	"ktcp"
+	"kcontainer"
 )
 
 type serverConfig struct {
@@ -22,9 +23,23 @@ type serverConfig struct {
 
 func main() {
 
-	klog.LogInfo("Testserver started")
-
 	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	kdlogger, err := klog.NewKDefaultLogger(&klog.KDefaultLoggerOpt{
+		LogTypeDepth:		klog.KLogType_Fatal,
+		LoggerName:			"perform",
+		RootDirectoryName:	"log",
+		UseQueue:			false,
+	})
+
+	if nil != err {
+		println("Failed NewKDefaultLogger : ", err.Error())
+		return
+	}
+
+	klog.SetDefaultLoggerInstance(kdlogger)
+
+	klog.LogInfo("Performance test server started")
 
 	serverConfigBytes, err := ioutil.ReadFile("configServer.json")
 	if nil != err {
@@ -39,10 +54,18 @@ func main() {
 		return
 	}
 
-	connhOpt := &ktcp.KConnHandleOpt{
-		Handler:	khandler.NewKConnHandlerJson(khandler.NewProcessorExampleJson()),
-		Protocol:	&kprotocol.KProtocolJson{},
+	container, err := kcontainer.NewKContainer(2000)
+	if nil != err {
+		klog.LogWarn("Failed to create container : %s", err.Error())
+		return
 	}
+
+	connhOpt := &ktcp.KConnHandleOpt{
+		Handler:	khandler.NewKConnHandlerEchoServer(),
+		Protocol:	&kprotocol.KProtocolEcho{},
+	}
+
+	connhOpt.Handler.(*khandler.KConnHandlerEchoServer).SetContainer(container)
 
 	acceptor, err := ktcp.NewKAcceptor(serverConfig.Port, &serverConfig.AcceptorOpt, connhOpt )
 	if nil != err {

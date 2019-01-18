@@ -14,6 +14,15 @@ type KAcceptorOpt struct {
 	ReportingIntervalTime	uint32
 }
 
+func (m *KAcceptorOpt) Clone() *KAcceptorOpt {
+
+	return &KAcceptorOpt{
+		ConnOpt:		m.ConnOpt,
+		AcceptTimeout:	m.AcceptTimeout,
+		ReportingIntervalTime:m.ReportingIntervalTime,
+	}
+}
+
 func (m *KAcceptorOpt) SetDefault() {
 	m.ConnOpt.SetDefault()
 	m.AcceptTimeout			= 300000
@@ -40,7 +49,7 @@ func (m *KAcceptorOpt) Verify() (err error) {
 		return
 	}
 
-	if 1000 > m.ReportingIntervalTime {
+	if 0 != m.ReportingIntervalTime && 1000 > m.ReportingIntervalTime {
 		err = errors.New(fmt.Sprintf("KAcceptorOpt.Verify() ReportingIntervalTime too short : %d milisec", m.ReportingIntervalTime))
 		return
 	}
@@ -55,7 +64,18 @@ type KConnOpt struct {
 	LingerTime				uint32
 	NoDelay					bool
 	UseLinger				bool
+}
 
+func (m *KConnOpt) Clone() *KConnOpt {
+
+	return &KConnOpt{
+		KeepAliveTime:			m.KeepAliveTime,
+		PacketChanMaxSend:		m.PacketChanMaxSend,
+		PacketChanMaxReceive:	m.PacketChanMaxReceive,
+		LingerTime:				m.LingerTime,
+		NoDelay:				m.NoDelay,
+		UseLinger:				m.UseLinger,
+	}
 }
 
 func (m *KConnOpt) SetDefault() {
@@ -110,6 +130,14 @@ type KConnHandleOpt struct {
 	Protocol				kprotocol.IKProtocol
 }
 
+func (m *KConnHandleOpt) Clone() *KConnHandleOpt {
+
+	return &KConnHandleOpt{
+		Handler:	m.Handler,
+		Protocol:	m.Protocol,
+	}
+}
+
 func (m *KConnHandleOpt) Verify() (err error) {
 
 	if nil == m.Handler {
@@ -126,11 +154,20 @@ func (m *KConnHandleOpt) Verify() (err error) {
 }
 
 type KClientOpt struct {
-	ID						uint64
 	TargetRemoteIP			string
 	TargetPort				uint32
 	Reconnect				bool
 	ReconnectIntervalTime	uint32
+}
+
+func (m *KClientOpt) Clone() *KClientOpt {
+
+	return &KClientOpt{
+		TargetRemoteIP:	m.TargetRemoteIP,
+		TargetPort:		m.TargetPort,
+		Reconnect:		m.Reconnect,
+		ReconnectIntervalTime:m.ReconnectIntervalTime,
+	}
 }
 
 func (m *KClientOpt) Verify() (err error) {

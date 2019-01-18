@@ -99,14 +99,13 @@ func (m *kLogger) logging() {
 
 	for {
 		select {
-		case <-m.StopGoRoutineSignal():
+		case <-m.DestroySignal():
 			//println("logging closed!!", m.Name())
 			return
 		case fn := <-m.queue:
 			fn()
 		}
 	}
-
 }
 
 

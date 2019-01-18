@@ -10,6 +10,7 @@ import (
 
 	"kobject"
 	klog 		"klogger"
+	"kutil"
 )
 
 type KAcceptor struct {
@@ -19,6 +20,7 @@ type KAcceptor struct {
 	port			uint32
 
 	connIDSeq		uint64
+	lifeTime 		*kutil.KTimer
 }
 
 func NewKAcceptor(port uint32, accOpt *KAcceptorOpt, connhOpt *KConnHandleOpt ) (acceptor *KAcceptor, err error) {
@@ -45,9 +47,10 @@ func NewKAcceptor(port uint32, accOpt *KAcceptorOpt, connhOpt *KConnHandleOpt ) 
 
 	acceptor = &KAcceptor{
 		KObject:		kobject.NewKObject("Acceptor"),
-		acceptorOpt:	accOpt,
-		connHandleOpt:	connhOpt,
-		port:		port,
+		acceptorOpt:	accOpt.Clone(),
+		connHandleOpt:	connhOpt.Clone(),
+		port:			port,
+		lifeTime:		kutil.NewKTimer(),
 	}
 
 	go acceptor.reporting()
@@ -82,7 +85,7 @@ func (m *KAcceptor) Listen() (err error) {
 	for {
 
 		select {
-		case <-m.StopGoRoutineSignal():
+		case <-m.DestroySignal():
 			err = errors.New("KAcceptor.Listen() sensed StopGoRoutineRequest")
 			return
 		default:
@@ -140,10 +143,14 @@ func (m *KAcceptor) reporting() {
 	for {
 
 		select {
-		case <-m.StopGoRoutineSignal():
-			klog.LogDetail("Server.reporting() StopGoRoutine sensed")
+		case <-m.DestroySignal():
+			klog.LogDetail("KAcceptor.reporting() Destroy sensed")
 			return
 		case <-timer.C:
+			lifeTimeSec := uint64(m.lifeTime.ElapsedMilisec()/1000)
+			klog.LogInfo("KAcceptor accepting per sec : %v", m.connIDSeq/lifeTimeSec )
+			klog.LogInfo("KAcceptor messaging per sec : %v", (m.connHandleOpt.Handler.MessageCount())/lifeTimeSec )
+			kutil.PrintMemUsage()
 			timer.Reset(interval)
 		}
 

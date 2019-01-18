@@ -16,7 +16,6 @@ import (
 func main() {
 
 	cliOpt := &ktcp.KClientOpt{
-		ID:				0,
 		TargetRemoteIP:	"0.0.0.0",
 		TargetPort:		8989,
 		Reconnect:		true,
@@ -28,7 +27,7 @@ func main() {
 		Protocol:	&kprotocol.KProtocolJson{},
 	}
 
-	client, err := ktcp.NewKClient(cliOpt, nil, connhOpt )
+	client, err := ktcp.NewKClient(0, cliOpt, nil, connhOpt )
 	if nil != err {
 		klog.LogWarn("Create client failed : %s", err.Error())
 		return

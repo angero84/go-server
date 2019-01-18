@@ -42,7 +42,7 @@ type KConn struct {
 
 	disconnectOnce		sync.Once
 	startOnce			sync.Once
-	lifeTime			kutil.KTimer
+	lifeTime			*kutil.KTimer
 	disconnectFlag		int32
 }
 
@@ -78,8 +78,10 @@ func newKConn(conn *net.TCPConn, id uint64, connOpt *KConnOpt, connHandleOpt *KC
 		packetChanReceive:	make(chan kprotocol.IKPacket, connOpt.PacketChanMaxReceive),
 		remoteHostIP:		host,
 		remotePort:			port,
+		lifeTime:			kutil.NewKTimer(),
 	}
 }
+
 
 func (m *KConn) ID()				uint64			{ return m.id }
 func (m *KConn) RawConn()			*net.TCPConn	{ return m.rawConn }
@@ -157,9 +159,9 @@ func (m *KConn) SendWithTimeout(p kprotocol.IKPacket, timeout time.Duration) (er
 		select {
 			case m.packetChanSend <- p:
 				return
-			case <-m.StopGoRoutineSignal():
+			case <-m.DestroySignal():
 				err = KConnErr{KConnErrType_Closed}
-				klog.LogDetail("[id:%d] KConn.SendWithTimeout() StopGoRoutine sensed", m.id)
+				klog.LogDetail("[id:%d] KConn.SendWithTimeout() Destroy sensed", m.id)
 				return
 			case <-time.After(timeout):
 				err = KConnErr{KConnErrType_WriteBlocked}
@@ -195,7 +197,7 @@ func (m *KConn) disconnect (gracefully bool) {
 	}()
 
 	atomic.StoreInt32(&m.disconnectFlag, 1)
-	m.KObject.StopGoRoutine()
+	m.KObject.Destroy()
 
 	if gracefully {
 		close(m.packetChanSend)
@@ -228,8 +230,8 @@ func (m *KConn) reading() {
 	for {
 
 		select {
-			case <-m.StopGoRoutineSignal():
-				klog.LogDetail("[id:%d] KConn.reading() StopGoRoutine sensed", m.id)
+			case <-m.DestroySignal():
+				klog.LogDetail("[id:%d] KConn.reading() Destroy sensed", m.id)
 				return
 			default:
 				if nil == m.protocol {
@@ -258,8 +260,8 @@ func (m *KConn) writing() {
 
 	for {
 		select {
-		case <-m.StopGoRoutineSignal():
-			klog.LogDetail("[id:%d] KConn.writing() StopGoRoutine sensed", m.id)
+		case <-m.DestroySignal():
+			klog.LogDetail("[id:%d] KConn.writing() Destroy sensed", m.id)
 			return
 		case p := <-m.packetChanSend:
 			if m.Disconnected() {
@@ -285,8 +287,8 @@ func (m *KConn) dispatching() {
 
 	for {
 		select {
-		case <-m.StopGoRoutineSignal():
-			klog.LogDetail("[id:%d] KConn.dispatching() StopGoRoutine sensed", m.id)
+		case <-m.DestroySignal():
+			klog.LogDetail("[id:%d] KConn.dispatching() Destroy sensed", m.id)
 			return
 		case p := <-m.packetChanReceive:
 			if m.Disconnected() {

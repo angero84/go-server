@@ -19,12 +19,12 @@ func NewKObject(name string) *KObject {
 }
 
 func (m *KObject) Name()					string 			{ return m.name }
-func (m *KObject) StopGoRoutineSignal()		<-chan struct{}	{ return m.stopSignal }
+func (m *KObject) DestroySignal()		<-chan struct{}	{ return m.stopSignal }
 
 func (m *KObject) Lock()		{ m.mutex.Lock() }
 func (m *KObject) Unlock()		{ m.mutex.Unlock() }
 
-func (m *KObject) StopGoRoutine() {
+func (m *KObject) Destroy() {
 
 	m.stopOnce.Do(
 		func() {
