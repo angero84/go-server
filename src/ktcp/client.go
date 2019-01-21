@@ -74,10 +74,10 @@ func (m *KClient) Destroy() (err error) {
 	return
 }
 
-func (m* KClient) ID() uint64					{ return m.id }
-func (m *KClient) Connected() bool				{ return m.connected() }
-func (m *KClient) ResetReconnect(reconn bool)	{ m.clientOpt.Reconnect = reconn }
-func (m *KClient) ResetConnectTarget			(ip string, port uint32) { m.clientOpt.TargetRemoteIP, m.clientOpt.TargetPort = ip, port }
+func (m* KClient) ID() uint64									{ return m.id }
+func (m *KClient) Connected() bool								{ return m.connected() }
+func (m *KClient) ResetReconnect(reconn bool)					{ m.clientOpt.Reconnect = reconn }
+func (m *KClient) ResetConnectTarget(ip string, port uint32) 	{ m.clientOpt.TargetRemoteIP, m.clientOpt.TargetPort = ip, port }
 
 func (m *KClient) Connect() (err error){
 
