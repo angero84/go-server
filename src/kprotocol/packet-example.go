@@ -19,7 +19,7 @@ func (m *ProtocolJsonRequestLogin) Unmarshal(p IKPacket) (err error) {
 func (m *ProtocolJsonRequestLogin) MakePacket() (p IKPacket) {
 
 	bytes, _ := json.Marshal(*m)
-	p = NewKPacketJson(1001, bytes)
+	p = NewKPacket(1001, bytes)
 
 	return
 }
@@ -37,7 +37,7 @@ func (m *ProtocolJsonRequestChatting) Unmarshal(p IKPacket) (err error) {
 func (m *ProtocolJsonRequestChatting) MakePacket() (p IKPacket) {
 
 	bytes, _ := json.Marshal(*m)
-	p = NewKPacketJson(1002, bytes)
+	p = NewKPacket(1002, bytes)
 
 	return
 }
@@ -57,7 +57,7 @@ func (m *ProtocolJsonResponseChatting) Unmarshal(p IKPacket) (err error) {
 func (m *ProtocolJsonResponseChatting) MakePacket() (p IKPacket) {
 
 	bytes, _ := json.Marshal(*m)
-	p = NewKPacketJson(1003, bytes)
+	p = NewKPacket(1003, bytes)
 
 	return
 }

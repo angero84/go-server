@@ -107,7 +107,7 @@ func (m *KAcceptor) Listen() (err error) {
 					klog.LogFatal("KAcceptor.Listen() connection publishing recovered : %v", rc)
 					//klog.MakeFatalFile("KAcceptor.Listen() connection publishing recovered : %v", rc)
 					if nil != tmpConn {
-						tmpConn.Disconnect(true)
+						tmpConn.Disconnect()
 					}
 				}
 			}()

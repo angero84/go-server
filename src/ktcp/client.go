@@ -65,7 +65,7 @@ func NewKClient(id uint64, cliOpt *KClientOpt, connOpt *KConnOpt, connhOpt *KCon
 	return
 }
 
-func (m *KClient) Destroy() (err error) {
+func (m *KClient) Destroy() {
 
 	if kconn := m.kconn ; nil != kconn {
 		kconn.Destroy()
@@ -95,7 +95,7 @@ func (m *KClient) ConnectAsync(callback KClientCallBack){
 func (m *KClient) Disconnect() {
 
 	if kconn := m.kconn ; nil != kconn {
-		kconn.Disconnect(true)
+		kconn.Disconnect()
 	}
 }
 
@@ -187,7 +187,7 @@ func (m *KClient) connect(callback KClientCallBack) (err error){
 	}
 
 	if kconn := m.kconn ; nil != kconn {
-		kconn.Disconnect(true)
+		kconn.Disconnect()
 	}
 	m.kconn = newKConn(conn, m.ID(), m.connOpt, m.connHandleOpt)
 

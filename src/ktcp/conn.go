@@ -89,12 +89,12 @@ func (m *KConn) RemoteHostIP()		string			{ return m.remoteHostIP }
 func (m *KConn) RemoteHostPort()	string			{ return m.remotePort }
 
 
-func (m *KConn) Disconnect(gracefully bool) {
+func (m *KConn) Disconnect() {
 
 	m.disconnectOnce.Do(
 		func() {
 			klog.LogDebug("KConn.disconnect() called - id:%d", m.id)
-			go m.disconnect(gracefully)
+			go m.disconnect()
 		})
 }
 
@@ -123,7 +123,7 @@ func (m *KConn) Send(p kprotocol.IKPacket) (err error)  {
 	default:
 		err = KConnErr{KConnErrType_WriteBlocked}
 		klog.LogFatal("[id:%d] KConn.Send() packet push blocked", m.id)
-		m.Disconnect(true)
+		m.Disconnect()
 		return
 	}
 
@@ -151,7 +151,7 @@ func (m *KConn) SendWithTimeout(p kprotocol.IKPacket, timeout time.Duration) (er
 			default:
 				err = KConnErr{KConnErrType_WriteBlocked}
 				klog.LogFatal("[id:%d] KConn.SendWithTimeout() packet push blocked", m.id)
-				m.Disconnect(true)
+				m.Disconnect()
 				return
 		}
 
@@ -166,7 +166,7 @@ func (m *KConn) SendWithTimeout(p kprotocol.IKPacket, timeout time.Duration) (er
 			case <-time.After(timeout):
 				err = KConnErr{KConnErrType_WriteBlocked}
 				klog.LogFatal("[id:%d] KConn.SendWithTimeout() timeout", m.id)
-				m.Disconnect(true)
+				m.Disconnect()
 				return
 		}
 	}
@@ -188,7 +188,7 @@ func (m *KConn) Start() {
 	})
 }
 
-func (m *KConn) disconnect (gracefully bool) {
+func (m *KConn) disconnect () {
 
 	defer func() {
 		if rc := recover() ; nil != rc {
@@ -198,17 +198,6 @@ func (m *KConn) disconnect (gracefully bool) {
 
 	atomic.StoreInt32(&m.disconnectFlag, 1)
 	m.KObject.Destroy()
-
-	if gracefully {
-		close(m.packetChanSend)
-		for p := range m.packetChanSend {
-			if _, err := m.rawConn.Write(p.Serialize()) ; err != nil {
-				klog.LogWarn("[id:%d] KConn.disconnect() Write err : %s", m.id, err.Error())
-				break
-			}
-		}
-	}
-
 	m.rawConn.Close()
 	klog.LogDetail("[id:%d] KConn.disconnect() rawConn Closed", m.id)
 	if nil != m.handler {
@@ -224,7 +213,7 @@ func (m *KConn) reading() {
 		if rc := recover() ; nil != rc {
 			klog.LogWarn("[id:%d] KConn.reading() recovered : %v", m.id, rc)
 		}
-		m.Disconnect(true)
+		m.Disconnect()
 	}()
 
 	for {
@@ -255,7 +244,7 @@ func (m *KConn) writing() {
 		if rc := recover() ; nil != rc {
 			klog.LogWarn("[id:%d] KConn.writing() recovered : %v", m.id, rc)
 		}
-		m.Disconnect(true)
+		m.Disconnect()
 	}()
 
 	for {
@@ -282,7 +271,7 @@ func (m *KConn) dispatching() {
 		if rc := recover() ; nil != rc {
 			klog.LogWarn("[id:%d] KConn.dispatching() recovered : %v", m.id, rc)
 		}
-		m.Disconnect(true)
+		m.Disconnect()
 	}()
 
 	for {

@@ -24,7 +24,7 @@ func main() {
 
 	connhOpt := &ktcp.KConnHandleOpt{
 		Handler:	khandler.NewKConnHandlerJson(khandler.NewProcessorExampleJson()),
-		Protocol:	&kprotocol.KProtocolJson{},
+		Protocol:	&kprotocol.KProtocol{},
 	}
 
 	client, err := ktcp.NewKClient(0, cliOpt, nil, connhOpt )

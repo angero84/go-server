@@ -54,7 +54,7 @@ func main() {
 		return
 	}
 
-	container, err := kcontainer.NewKContainer(2000)
+	container, err := kcontainer.NewKMapConn(2000)
 	if nil != err {
 		klog.LogWarn("Failed to create container : %s", err.Error())
 		return
@@ -62,7 +62,7 @@ func main() {
 
 	connhOpt := &ktcp.KConnHandleOpt{
 		Handler:	khandler.NewKConnHandlerEchoServer(),
-		Protocol:	&kprotocol.KProtocolEcho{},
+		Protocol:	&kprotocol.KProtocol{},
 	}
 
 	connhOpt.Handler.(*khandler.KConnHandlerEchoServer).SetContainer(container)

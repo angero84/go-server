@@ -11,7 +11,7 @@ import (
 
 type KConnHandlerEchoServer struct{
 	*kobject.KObject
-	kconns			*kcontainer.KContainer
+	kconns			*kcontainer.KMapConn
 	messageCount	uint64
 }
 
@@ -34,7 +34,7 @@ func (m *KConnHandlerEchoServer) Destroy() {
 
 func (m *KConnHandlerEchoServer) MessageCount() uint64 { return m.messageCount }
 
-func (m *KConnHandlerEchoServer) SetContainer(obj *kcontainer.KContainer) {
+func (m *KConnHandlerEchoServer) SetContainer(obj *kcontainer.KMapConn) {
 
 	if nil != m.kconns {
 		m.kconns.Destroy()
@@ -55,9 +55,9 @@ func (m *KConnHandlerEchoServer) OnConnected(c *ktcp.KConn) {
 
 func (m *KConnHandlerEchoServer) OnMessage(c *ktcp.KConn, p kprotocol.IKPacket) {
 
-	echoPacket := p.(*kprotocol.KPacketEcho)
-	klog.LogDetail("OnMessage:[%v] [%v]\n", echoPacket.Length(), string(echoPacket.Body()))
-	c.Send(kprotocol.NewKPacketEcho(echoPacket.Serialize(), true))
+	echoPacket := p.(*kprotocol.KPacket)
+	klog.LogDetail("OnMessage:[%v] [%v]\n", echoPacket.Len(), string(echoPacket.Bytes()))
+	c.Send(kprotocol.NewKPacket(echoPacket.ID(), echoPacket.Bytes()))
 	atomic.AddUint64(&m.messageCount, 1)
 }
 

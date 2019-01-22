@@ -2,7 +2,16 @@ package ktcp
 
 import (
 	"kprotocol"
+	"time"
 )
+
+type IKConn interface {
+	ID() 															uint64
+	Send(p kprotocol.IKPacket)										(err error)
+	SendWithTimeout(p kprotocol.IKPacket, timeout time.Duration)	(err error)
+	Disconnect()
+	Destroy()
+}
 
 type KClientCallBack func(client *KClient, err error)
 

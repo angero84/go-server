@@ -32,7 +32,7 @@ func (m *KConnHandlerJson) OnConnected(c *ktcp.KConn) {
 
 func (m *KConnHandlerJson) OnMessage(c *ktcp.KConn, p kprotocol.IKPacket) {
 
-	packetID := p.PacketID()
+	packetID := p.ID()
 	klog.LogDetail( "KConnHandlerJson.OnMessage() - [id:%d][ip:%s][packetid:%d]", c.ID(), c.RemoteHostIP(), packetID)
 	if fn, exist := m.handlers[packetID] ; exist {
 		fn(c, p)

@@ -46,14 +46,14 @@ func main() {
 
 	connhOpt := &ktcp.KConnHandleOpt{
 		Handler:	khandler.NewKConnHandlerEchoClient(),
-		Protocol:	&kprotocol.KProtocolEcho{},
+		Protocol:	&kprotocol.KProtocol{},
 	}
 
 	robotOpt := &robot.ClientRobotOpt{
 		RobotingInterval:	20,
 	}
 
-	container, err := kcontainer.NewKContainer(2000)
+	container, err := kcontainer.NewKMap()
 	if nil != err {
 		klog.LogWarn("Failed to create container : %s", err.Error())
 		return

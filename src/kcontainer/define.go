@@ -1,6 +1,7 @@
 package kcontainer
 
 
-type IKContainer interface {
+type IKMap interface {
 	ID()		uint64
+	Destroy()
 }
