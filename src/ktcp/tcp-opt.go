@@ -83,7 +83,7 @@ func (m *KConnOpt) SetDefault() {
 	m.PacketChanMaxSend		= 100
 	m.PacketChanMaxReceive	= 100
 	m.LingerTime			= 2000
-	m.NoDelay				= true
+	m.NoDelay				= false
 	m.UseLinger				= true
 	klog.LogWarn("KConnOpt.SetDefault() Called")
 }

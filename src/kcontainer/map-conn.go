@@ -80,7 +80,7 @@ func (m *KMapConn) SendWithTimeout(p kprotocol.IKPacket, timeout time.Duration) 
 	for _, r := range *kmap {
 		err = r.(ktcp.IKConn).SendWithTimeout(p, timeout)
 		if nil != err {
-			klog.LogWarn("KMapConn.Send() err : %v", err.Error())
+			klog.LogWarn("KMapConn.SendWithTimeout() err : %v", err.Error())
 		}
 	}
 

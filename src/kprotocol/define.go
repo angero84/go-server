@@ -20,5 +20,5 @@ type IKPacket interface {
 }
 
 type IKProtocol interface {
-	ReadKPacket(conn *net.TCPConn) (IKPacket, error)
+	ReadKPacket(kconn *net.TCPConn) (IKPacket, error)
 }

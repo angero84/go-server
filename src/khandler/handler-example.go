@@ -32,12 +32,14 @@ func (m *KConnHandler) OnConnected(c *ktcp.KConn) {
 
 func (m *KConnHandler) OnMessage(c *ktcp.KConn, p kprotocol.IKPacket) {
 
-	packetID := p.ID()
-	klog.LogDetail( "KConnHandler.OnMessage() - [id:%d][ip:%s][packetid:%d]", c.ID(), c.RemoteHostIP(), packetID)
-	if fn, exist := m.handlers[packetID] ; exist {
-		fn(c, p)
-	} else {
-		klog.LogWarn( "KConnHandler.OnMessage() - [id:%d][ip:%s][packetid:%d] Not registered Handler for the packetid", c.ID(), c.RemoteHostIP(), packetID)
+	if nil != m.handlers {
+		packetID := p.ID()
+		klog.LogDetail( "KConnHandler.OnMessage() - [id:%d][ip:%s][packetid:%d]", c.ID(), c.RemoteHostIP(), packetID)
+		if fn, exist := m.handlers[packetID] ; exist {
+			fn(c, p)
+		} else {
+			klog.LogWarn( "KConnHandler.OnMessage() - [id:%d][ip:%s][packetid:%d] Not registered Handler for the packetid", c.ID(), c.RemoteHostIP(), packetID)
+		}
 	}
 }
 

@@ -50,7 +50,7 @@ func main() {
 	}
 
 	robotOpt := &robot.ClientRobotOpt{
-		RobotingInterval:	20,
+		RobotingInterval:	10,
 	}
 
 	container, err := kcontainer.NewKMap()
@@ -59,7 +59,7 @@ func main() {
 		return
 	}
 
-	for i := uint64(0) ; i < 500 ; i++ {
+	for i := uint64(0) ; i < 900 ; i++ {
 
 		client, err := ktcp.NewKClient(i, cliOpt, connOpt, connhOpt )
 		if nil != err {

@@ -169,8 +169,8 @@ func (m *KClient) connect(callback KClientCallBack) (err error){
 			err = errors.New(fmt.Sprintf("[id:%d] KClient.connect() recovered : %v", m.ID(), rc))
 		}
 		atomic.StoreUint32(&m.connecting, 0)
-		if nil == err && nil != m.kconn {
-			m.kconn.Start()
+		if nil != err && nil != m.kconn {
+			m.kconn.Disconnect()
 		}
 	}()
 
@@ -189,6 +189,7 @@ func (m *KClient) connect(callback KClientCallBack) (err error){
 	if kconn := m.kconn ; nil != kconn {
 		kconn.Disconnect()
 	}
+
 	m.kconn = newKConn(conn, m.ID(), m.connOpt, m.connHandleOpt)
 
 	return
@@ -204,7 +205,7 @@ func (m *KClient) reconnecting() {
 	}()
 
 	reconInterval := time.Duration(m.clientOpt.ReconnectIntervalTime) * time.Millisecond
-	reconTimer := time.NewTimer(reconInterval)
+	reconTimer := time.NewTimer(0)
 
 	for {
 

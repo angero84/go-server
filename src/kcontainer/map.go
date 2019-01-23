@@ -58,7 +58,7 @@ func (m *KMap) Add(object IKMap) (err error) {
 	if _, exist := m.objects[object.ID()] ; false == exist {
 		m.objects[object.ID()] = object
 	} else {
-		err = errors.New(fmt.Sprintf("the ID %d already exists", object.ID()))
+		err = errors.New(fmt.Sprintf("ID %d already exists", object.ID()))
 	}
 
 	return
@@ -72,7 +72,7 @@ func (m *KMap) Remove(object IKMap) (err error) {
 	if _, exist := m.objects[object.ID()] ; true == exist {
 		delete(m.objects, object.ID())
 	} else {
-		err = errors.New(fmt.Sprintf("the ID %d does not exists", object.ID()))
+		err = errors.New(fmt.Sprintf("ID %d does not exists", object.ID()))
 	}
 
 	return

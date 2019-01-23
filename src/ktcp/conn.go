@@ -68,7 +68,7 @@ func newKConn(conn *net.TCPConn, id uint64, connOpt *KConnOpt, connHandleOpt *KC
 		conn.SetLinger(-1)
 	}
 
-	return &KConn{
+	kconn := &KConn{
 		KObject:			kobject.NewKObject("KConn"),
 		id:					id,
 		rawConn:			conn,
@@ -80,6 +80,10 @@ func newKConn(conn *net.TCPConn, id uint64, connOpt *KConnOpt, connHandleOpt *KC
 		remotePort:			port,
 		lifeTime:			kutil.NewKTimer(),
 	}
+
+	kconn.start()
+
+	return kconn
 }
 
 
@@ -173,7 +177,7 @@ func (m *KConn) SendWithTimeout(p kprotocol.IKPacket, timeout time.Duration) (er
 
 }
 
-func (m *KConn) Start() {
+func (m *KConn) start() {
 
 	m.startOnce.Do(func() {
 

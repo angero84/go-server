@@ -56,7 +56,7 @@ func (m *KConnHandlerEchoServer) OnConnected(c *ktcp.KConn) {
 func (m *KConnHandlerEchoServer) OnMessage(c *ktcp.KConn, p kprotocol.IKPacket) {
 
 	echoPacket := p.(*kprotocol.KPacket)
-	klog.LogDetail("OnMessage:[%v] [%v]\n", echoPacket.Len(), string(echoPacket.Bytes()))
+	//klog.LogDetail("OnMessage:[%v] [%v]\n", echoPacket.Len(), string(echoPacket.Bytes()))
 	c.Send(kprotocol.NewKPacket(echoPacket.ID(), echoPacket.Bytes()))
 	atomic.AddUint64(&m.messageCount, 1)
 }

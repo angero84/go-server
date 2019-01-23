@@ -17,13 +17,13 @@ type KAcceptor struct {
 	*kobject.KObject
 	acceptorOpt		*KAcceptorOpt
 	connHandleOpt	*KConnHandleOpt
-	port			uint32
+	port			uint16
 
 	connIDSeq		uint64
 	lifeTime 		*kutil.KTimer
 }
 
-func NewKAcceptor(port uint32, accOpt *KAcceptorOpt, connhOpt *KConnHandleOpt ) (acceptor *KAcceptor, err error) {
+func NewKAcceptor(port uint16, accOpt *KAcceptorOpt, connhOpt *KConnHandleOpt ) (acceptor *KAcceptor, err error) {
 
 	if nil == accOpt {
 		accOpt = &KAcceptorOpt{}
@@ -58,10 +58,12 @@ func NewKAcceptor(port uint32, accOpt *KAcceptorOpt, connhOpt *KConnHandleOpt ) 
 	return
 }
 
+func (m *KAcceptor) Port() uint16 { return m.port }
+
 func (m *KAcceptor) Listen() (err error) {
 
 	var tcpAddr *net.TCPAddr
-	tcpAddr, err = net.ResolveTCPAddr("tcp4", fmt.Sprintf(":%d", m.port))
+	tcpAddr, err = net.ResolveTCPAddr("tcp4", fmt.Sprintf(":%d", m.Port()))
 	if nil != err {
 		return
 	}
@@ -71,6 +73,7 @@ func (m *KAcceptor) Listen() (err error) {
 	if nil != err {
 		return
 	}
+
 
 	defer func() {
 		if rc := recover() ; nil != rc {
@@ -113,7 +116,6 @@ func (m *KAcceptor) Listen() (err error) {
 			}()
 			connId 	:= m.newConnID()
 			tmpConn = newKConn(conn, connId, &m.acceptorOpt.ConnOpt, m.connHandleOpt )
-			tmpConn.Start()
 		}()
 
 	}

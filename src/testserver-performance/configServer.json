@@ -6,7 +6,7 @@
       "PacketChanMaxSend":100,
       "PacketChanMaxReceive":100,
       "LingerTime":2000,
-      "NoDelay":true,
+      "NoDelay":false,
       "UseLinger":true
     },
     "AcceptTimeout":300000,

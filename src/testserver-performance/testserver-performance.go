@@ -17,7 +17,7 @@ import (
 )
 
 type serverConfig struct {
-	Port 			uint32 				`json:"Port"`
+	Port 			uint16 				`json:"Port"`
 	AcceptorOpt		ktcp.KAcceptorOpt	`json:"AcceptorOpt"`
 }
 

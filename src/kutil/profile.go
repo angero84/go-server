@@ -13,6 +13,8 @@ func PrintMemUsage() {
 	fmt.Printf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
 	fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
 	fmt.Printf("\tNumGC = %v\n", m.NumGC)
+	fmt.Printf("\tNumGoroutine = %v\n", runtime.NumGoroutine())
+
 }
 
 func bToMb(b uint64) uint64 {
