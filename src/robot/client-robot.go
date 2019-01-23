@@ -60,7 +60,7 @@ func (m *ClientRobot) roboting() {
 	}
 
 	timer := time.NewTimer(interval)
-	packet := kprotocol.NewKPacketEcho([]byte("동해물과백"), false)
+	packet := kprotocol.NewKPacket(1, []byte("동해물과백"))
 
 	for {
 

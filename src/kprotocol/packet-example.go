@@ -6,81 +6,15 @@ import (
 	"encoding/binary"
 )
 
-type ProtocolJsonRequestLogin struct {
-	UserID			string
-	Password		string
-}
-
-func (m *ProtocolJsonRequestLogin) Unmarshal(p IKPacket) (err error) {
-	err = json.Unmarshal(p.Body(), m)
-	return
-}
-
-func (m *ProtocolJsonRequestLogin) MakePacket() (p IKPacket) {
-
-	bytes, _ := json.Marshal(*m)
-	p = NewKPacket(1001, bytes)
-
-	return
-}
-
-type ProtocolJsonRequestChatting struct {
-	ChatType		string
-	Chat			string
-}
-
-func (m *ProtocolJsonRequestChatting) Unmarshal(p IKPacket) (err error) {
-	err = json.Unmarshal(p.Body(), m)
-	return
-}
-
-func (m *ProtocolJsonRequestChatting) MakePacket() (p IKPacket) {
-
-	bytes, _ := json.Marshal(*m)
-	p = NewKPacket(1002, bytes)
-
-	return
-}
-
-
-type ProtocolJsonResponseChatting struct {
-	Name			string
-	ChatTYpe		string
-	Chat			string
-}
-
-func (m *ProtocolJsonResponseChatting) Unmarshal(p IKPacket) (err error) {
-	err = json.Unmarshal(p.Body(), m)
-	return
-}
-
-func (m *ProtocolJsonResponseChatting) MakePacket() (p IKPacket) {
-
-	bytes, _ := json.Marshal(*m)
-	p = NewKPacket(1003, bytes)
-
-	return
-}
-
-type ProtocolUser struct {
+type ProtocolStUser struct {
 	Name			string
 	Level 			uint32
 	Exp				uint64
 	Cash 			uint64
-	Characters		[]ProtocolCharacter
+	Characters		[]ProtocolStCharacter
 }
 
-func (m *ProtocolUser) Unmarshal(bytes []byte) (err error) {
-	err = json.Unmarshal(bytes, m)
-	return
-}
-
-func (m *ProtocolUser) Marshal() (bytes []byte) {
-	bytes, _ = json.Marshal(*m)
-	return
-}
-
-func (m *ProtocolUser) Serialize(buffer *bytes.Buffer) {
+func (m *ProtocolStUser) Serialize(buffer *bytes.Buffer) {
 
 	binary.Write(buffer, binary.BigEndian, uint16(len(m.Name)))
 	buffer.Write([]byte(m.Name))
@@ -94,7 +28,7 @@ func (m *ProtocolUser) Serialize(buffer *bytes.Buffer) {
 	}
 }
 
-func (m *ProtocolUser) Deserialize(buffer *bytes.Buffer) {
+func (m *ProtocolStUser) Deserialize(buffer *bytes.Buffer) {
 
 	len := binary.BigEndian.Uint16(buffer.Next(2))
 	m.Name = string(buffer.Next(int(len)))
@@ -104,7 +38,7 @@ func (m *ProtocolUser) Deserialize(buffer *bytes.Buffer) {
 
 	len = binary.BigEndian.Uint16(buffer.Next(2))
 	for i := uint16(0) ; i < len ; i++ {
-		char := ProtocolCharacter{}
+		char := ProtocolStCharacter{}
 		char.Deserialize(buffer)
 		m.Characters = append(m.Characters, char)
 	}
@@ -112,15 +46,15 @@ func (m *ProtocolUser) Deserialize(buffer *bytes.Buffer) {
 	return
 }
 
-type ProtocolCharacter struct {
+type ProtocolStCharacter struct {
 	Name			string
 	ID				uint32
 	Level			uint32
 	Exp				uint64
-	Equipments		[]ProtocolEquipment
+	Equipments		[]ProtocolStEquipment
 }
 
-func (m *ProtocolCharacter) Serialize(buffer *bytes.Buffer) {
+func (m *ProtocolStCharacter) Serialize(buffer *bytes.Buffer) {
 
 	binary.Write(buffer, binary.BigEndian, uint16(len(m.Name)))
 	buffer.Write([]byte(m.Name))
@@ -134,7 +68,7 @@ func (m *ProtocolCharacter) Serialize(buffer *bytes.Buffer) {
 	}
 }
 
-func (m *ProtocolCharacter) Deserialize(buffer *bytes.Buffer) {
+func (m *ProtocolStCharacter) Deserialize(buffer *bytes.Buffer) {
 
 	len := binary.BigEndian.Uint16(buffer.Next(2))
 	m.Name = string(buffer.Next(int(len)))
@@ -144,7 +78,7 @@ func (m *ProtocolCharacter) Deserialize(buffer *bytes.Buffer) {
 	len = binary.BigEndian.Uint16(buffer.Next(2))
 
 	for i := uint16(0) ; i < len ; i++ {
-		equip := ProtocolEquipment{}
+		equip := ProtocolStEquipment{}
 		equip.Deserialize(buffer)
 		m.Equipments = append(m.Equipments, equip)
 	}
@@ -152,25 +86,14 @@ func (m *ProtocolCharacter) Deserialize(buffer *bytes.Buffer) {
 	return
 }
 
-
-func (m *ProtocolCharacter) Unmarshal(bytes []byte) (err error) {
-	err = json.Unmarshal(bytes, m)
-	return
-}
-
-func (m *ProtocolCharacter) Marshal() (bytes []byte) {
-	bytes, _ = json.Marshal(*m)
-	return
-}
-
-type ProtocolEquipment struct {
+type ProtocolStEquipment struct {
 	Name			string
 	ID				uint32
 	Level			uint32
 	EnhanceValue	uint32
 }
 
-func (m *ProtocolEquipment) Serialize(buffer *bytes.Buffer) {
+func (m *ProtocolStEquipment) Serialize(buffer *bytes.Buffer) {
 
 	binary.Write(buffer, binary.BigEndian, uint16(len(m.Name)))
 	buffer.Write([]byte(m.Name))
@@ -179,7 +102,7 @@ func (m *ProtocolEquipment) Serialize(buffer *bytes.Buffer) {
 	binary.Write(buffer, binary.BigEndian, uint32(m.EnhanceValue))
 }
 
-func (m *ProtocolEquipment) Deserialize(buffer *bytes.Buffer) {
+func (m *ProtocolStEquipment) Deserialize(buffer *bytes.Buffer) {
 
 	len := binary.BigEndian.Uint16(buffer.Next(2))
 	m.Name = string(buffer.Next(int(len)))
@@ -190,12 +113,98 @@ func (m *ProtocolEquipment) Deserialize(buffer *bytes.Buffer) {
 	return
 }
 
-func (m *ProtocolEquipment) Unmarshal(bytes []byte) (err error) {
-	err = json.Unmarshal(bytes, m)
+type ProtocolLoginRequest struct {
+	*KPacket				`json:"-"`
+	UserID			string	`json:"UserID"`
+	Password		string	`json:"Password"`
+}
+
+func (m *ProtocolLoginRequest) Serialize() []byte {
+
+	m.KPacket = NewKPacket(1001, nil)
+
+	binary.Write(m.KPacket, binary.BigEndian, uint16(len(m.UserID)))
+	m.KPacket.Write([]byte(m.UserID))
+	binary.Write(m.KPacket, binary.BigEndian, uint16(len(m.Password)))
+	m.KPacket.Write([]byte(m.Password))
+
+	return m.KPacket.Serialize()
+}
+
+func (m *ProtocolLoginRequest) Deserialize(p IKPacket) (err error) {
+
+	buffer := p.Buff()
+
+	len := binary.BigEndian.Uint16(buffer.Next(2))
+	m.UserID = string(buffer.Next(int(len)))
+	len = binary.BigEndian.Uint16(buffer.Next(2))
+	m.Password = string(buffer.Next(int(len)))
+
 	return
 }
 
-func (m *ProtocolEquipment) Marshal() (bytes []byte) {
-	bytes, _ = json.Marshal(*m)
+type ProtocolLoginResponse struct {
+	*KPacket						`json:"-"`
+	SessionID		string			`json:"UserID"`
+	UserInfo		ProtocolStUser	`json:"UserInfo"`
+}
+
+func (m *ProtocolLoginResponse) Serialize() []byte {
+
+	m.KPacket = NewKPacket(1002, nil)
+
+	binary.Write(m.KPacket, binary.BigEndian, uint16(len(m.SessionID)))
+	m.KPacket.Write([]byte(m.SessionID))
+	m.UserInfo.Serialize(m.KPacket.Buff())
+
+	return m.KPacket.Serialize()
+}
+
+func (m *ProtocolLoginResponse) Deserialize(p IKPacket) (err error) {
+
+	buffer := p.Buff()
+
+	len := binary.BigEndian.Uint16(buffer.Next(2))
+	m.SessionID = string(buffer.Next(int(len)))
+	m.UserInfo.Deserialize(buffer)
+
 	return
 }
+
+type ProtocolChattingRequest struct {
+	*KPacket				`json:"-"`
+	ChatType		string	`json:"ChatType"`
+	Chat			string	`json:"Chat"`
+}
+
+func (m *ProtocolChattingRequest) Serialize() []byte {
+
+	bytes, _ := json.Marshal(*m)
+	m.KPacket = NewKPacket(1003, bytes)
+	return m.KPacket.Serialize()
+}
+
+func (m *ProtocolChattingRequest) Deserialize(p IKPacket) (err error) {
+	err = json.Unmarshal(p.Body(), m)
+	return
+}
+
+type ProtocolChattingResponse struct {
+	*KPacket				`json:"-"`
+	Name			string	`json:"Name"`
+	ChatType		string	`json:"ChatType"`
+	Chat			string	`json:"Chat"`
+}
+
+func (m *ProtocolChattingResponse) Serialize() []byte {
+
+	bytes, _ := json.Marshal(*m)
+	m.KPacket = NewKPacket(1004, bytes)
+	return m.KPacket.Serialize()
+}
+
+func (m *ProtocolChattingResponse) Deserialize(p IKPacket) (err error) {
+	err = json.Unmarshal(p.Body(), m)
+	return
+}
+

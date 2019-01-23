@@ -6,11 +6,10 @@ import (
 )
 
 const (
-	KPACKET_LENGTH_MAX	 		uint32 = 1048576
-	KPACKET_LENGTH_MIN			uint32 = 4
-	KPACKET_LEGNTH_BYTES		uint32 = 4
-	KPACKET_ID_BYTES			uint32 = 4
-
+	KPACKET_SIZE_MAX 		uint32 = 1048576
+	KPACKET_SIZE_MIN		uint32 = 5
+	KPACKET_SIZE_BYTES		uint32 = 4
+	KPACKET_ID_BYTES		uint32 = 4
 )
 
 type IKPacket interface {

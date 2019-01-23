@@ -12,7 +12,6 @@ import (
 type KPacket struct {
 	*bytes.Buffer
 	id			uint32
-
 }
 
 func NewKPacket(id uint32, slice []byte) *KPacket {
@@ -38,12 +37,12 @@ func (m *KPacket) Buff() *bytes.Buffer	{ return m.Buffer }
 func (m *KPacket) Body() []byte			{ return m.Bytes() }
 func (m *KPacket) Serialize() []byte {
 	idbodyLength := KPACKET_ID_BYTES + uint32(m.Len())
-	totalLength	:= KPACKET_LEGNTH_BYTES + idbodyLength  //packetid + body
+	totalLength	:= KPACKET_SIZE_BYTES + idbodyLength
 
-	tmpSlice		:= make([]byte, totalLength) //length + ( packetid + body )
-	binary.BigEndian.PutUint32(tmpSlice[0:4], idbodyLength)
-	binary.BigEndian.PutUint32(tmpSlice[4:8], m.id)
-	copy(tmpSlice[8:], m.Bytes())
+	tmpSlice		:= make([]byte, totalLength)
+	binary.BigEndian.PutUint32(tmpSlice[0:KPACKET_SIZE_BYTES], idbodyLength)
+	binary.BigEndian.PutUint32(tmpSlice[KPACKET_SIZE_BYTES:KPACKET_SIZE_BYTES+KPACKET_ID_BYTES], m.id)
+	copy(tmpSlice[KPACKET_SIZE_BYTES+KPACKET_ID_BYTES:], m.Bytes())
 	return tmpSlice
 }
 
@@ -58,7 +57,7 @@ func (m *KProtocol) ReadKPacket(conn *net.TCPConn) (packet IKPacket, err error) 
 		return
 	}
 
-	if KPACKET_LENGTH_MIN > length || KPACKET_LENGTH_MAX < length {
+	if KPACKET_SIZE_MIN > length || KPACKET_SIZE_MAX < length {
 		err = errors.New(fmt.Sprintf("the size of packet error : %d", length))
 		return
 	}

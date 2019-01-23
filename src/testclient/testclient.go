@@ -8,10 +8,8 @@ import (
 	"ktcp"
 	"khandler"
 	"fmt"
-	"sync"
+	"strings"
 )
-
-
 
 func main() {
 
@@ -23,7 +21,7 @@ func main() {
 	}
 
 	connhOpt := &ktcp.KConnHandleOpt{
-		Handler:	khandler.NewKConnHandlerJson(khandler.NewProcessorExampleJson()),
+		Handler:	khandler.NewKConnHandler(khandler.NewProcessorExample()),
 		Protocol:	&kprotocol.KProtocol{},
 	}
 
@@ -33,48 +31,45 @@ func main() {
 		return
 	}
 
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		err := client.Connect()
-		if nil != err {
-			klog.LogWarn("Connect err : %s", err.Error())
-			return
-		}
-	}()
+	cmd := ""
 
-	wg.Wait()
+	LOOP:
+	for {
 
-	if client.Connected() {
-		cmd := ""
-
-		LOOP:
-		for {
-
-			fmt.Scanln(&cmd)
-
-			switch cmd {
+		fmt.Scanln(&cmd)
+		splits := strings.Split(cmd,":")
+		if 0 < len(splits) {
+			switch splits[0] {
 			case "exit":
 				break LOOP
 			case "disconnect":
 				client.Disconnect()
 			case "connect":
 				client.ConnectAsync(nil)
-			default:
-
-				chat := kprotocol.ProtocolJsonRequestChatting{}
-				chat.Chat = cmd
-				chat.ChatType = "[normal]"
-
-				err := client.Send(chat.MakePacket())
+			case "login":
+				req := &kprotocol.ProtocolLoginRequest{}
+				req.UserID = "angero"
+				req.Password = "1234qwer"
+				err := client.Send(req)
 				if nil != err {
 					klog.LogWarn("Send err : %s", err.Error())
 				}
-			}
+			case "chat":
+				if 1 < len(splits) {
+					req := &kprotocol.ProtocolChattingRequest{}
+					req.Chat = splits[1]
+					req.ChatType = "[normal]"
+					err := client.Send(req)
+					if nil != err {
+						klog.LogWarn("Send err : %s", err.Error())
+					}
+				}
+			default:
 
+			}
 		}
 	}
+
 
 }
 
