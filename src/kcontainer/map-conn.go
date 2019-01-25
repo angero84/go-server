@@ -36,9 +36,9 @@ func NewKMapConn(reportingInterval uint32) (obj *KMapConn, err error) {
 	return
 }
 
-func (m *KMapConn) Add(object ktcp.IKConn) (err error) {
+func (m *KMapConn) Insert(object ktcp.IKConn) (err error) {
 
-	err = m.KMap.Add(object)
+	err = m.KMap.Insert(object)
 	return
 }
 

@@ -5,4 +5,4 @@ import (
 	"kprotocol"
 )
 
-type KConnHandlerFunc func(c *ktcp.KConn, p kprotocol.IKPacket)
+type KConnMessageHandler func(c *ktcp.KConn, p kprotocol.IKPacket)

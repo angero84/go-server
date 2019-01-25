@@ -17,16 +17,16 @@ type kLogger struct {
 	useQueue	bool
 }
 
-func NewkLogger(writer *io.Writer, prefix string, useQueue bool) (klogger *kLogger, err error) {
+func NewkLogger(writer *io.Writer, prefix string, useQueue bool) (object *kLogger, err error) {
 
-	klogger = &kLogger{
+	object = &kLogger{
 		KObject:	kobject.NewKObject("kLogger"),
 		logger:		log.New(*writer, prefix, log.Ldate|log.Ltime|log.Lmicroseconds),
 		queue:		make(chan func(), KLOG_QUEUE_CHAN_MAX),
 		useQueue:	useQueue,
 	}
 
-	go klogger.logging()
+	go object.logging()
 
 	return
 }
@@ -93,7 +93,7 @@ func (m *kLogger) logging() {
 
 	defer func() {
 		if err := recover() ; nil != err {
-			MakeFatalFile("kLogger.logging() recovered : %v", err)
+			MakeFatal("kLogger.logging() recovered : %v", err)
 		}
 	}()
 

@@ -48,7 +48,7 @@ type kDefaultLogger struct {
 	loggerName		string
 }
 
-func NewKDefaultLogger(opt *KDefaultLoggerOpt) (kdlogger *kDefaultLogger, err error) {
+func NewKDefaultLogger(opt *KDefaultLoggerOpt) (object *kDefaultLogger, err error) {
 
 	if nil == opt {
 		opt = &KDefaultLoggerOpt{}
@@ -60,7 +60,7 @@ func NewKDefaultLogger(opt *KDefaultLoggerOpt) (kdlogger *kDefaultLogger, err er
 		return
 	}
 
-	kdlogger = &kDefaultLogger{
+	object = &kDefaultLogger{
 		KObject:		kobject.NewKObject("kDefaultLogger"),
 		kLoggers:		make([]*kLogger, KLogWriterType_Max),
 		kLogTypeDepth:	opt.LogTypeDepth,
@@ -72,7 +72,7 @@ func NewKDefaultLogger(opt *KDefaultLoggerOpt) (kdlogger *kDefaultLogger, err er
 	if nil != err {
 		return
 	}
-	kdlogger.kLogFile = klogfile
+	object.kLogFile = klogfile
 
 	for i := KLogWriterType(0) ; i < KLogWriterType_Max ; i++ {
 
@@ -81,11 +81,11 @@ func NewKDefaultLogger(opt *KDefaultLoggerOpt) (kdlogger *kDefaultLogger, err er
 
 		switch i {
 		case KLogWriterType_All:
-			logWriter = io.MultiWriter(kdlogger.kLogFile.File(), os.Stdout)
+			logWriter = io.MultiWriter(object.kLogFile.File(), os.Stdout)
 		case KLogWriterType_Console:
 			logWriter = io.MultiWriter(os.Stdout)
 		case KLogWriterType_File:
-			logWriter = io.MultiWriter(kdlogger.kLogFile.File())
+			logWriter = io.MultiWriter(object.kLogFile.File())
 		default:
 			err = errors.New( fmt.Sprintf("NewKDefaultLogger() Undefined KLogWriterType : %d", i ))
 			return
@@ -95,7 +95,7 @@ func NewKDefaultLogger(opt *KDefaultLoggerOpt) (kdlogger *kDefaultLogger, err er
 		if nil != err {
 			return
 		}
-		kdlogger.kLoggers[i] = klogger
+		object.kLoggers[i] = klogger
 	}
 
 	return
@@ -155,16 +155,16 @@ func (m *kDefaultLogger) checkLogFile() {
 	}
 }
 
-func SetDefaultLoggerInstance(kdlogger *kDefaultLogger) {
+func SetDefaultLoggerInstance(object *kDefaultLogger) {
 
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Destroy()
 	}
 
-	instanceKDefaultLogger = kdlogger
+	instanceKDefaultLogger = object
 }
 
-func MakeFatalFile(format string, v ...interface{}) {
+func MakeFatal(format string, v ...interface{}) {
 
 	file, err := os.OpenFile("fatal.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if nil != err {

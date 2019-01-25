@@ -133,7 +133,7 @@ func (m *ProtocolLoginRequest) Serialize() []byte {
 
 func (m *ProtocolLoginRequest) Deserialize(p IKPacket) (err error) {
 
-	buffer := p.Buff()
+	buffer := p.BytesBuffer()
 
 	len := binary.BigEndian.Uint16(buffer.Next(2))
 	m.UserID = string(buffer.Next(int(len)))
@@ -155,14 +155,14 @@ func (m *ProtocolLoginResponse) Serialize() []byte {
 
 	binary.Write(m.KPacket, binary.BigEndian, uint16(len(m.SessionID)))
 	m.KPacket.Write([]byte(m.SessionID))
-	m.UserInfo.Serialize(m.KPacket.Buff())
+	m.UserInfo.Serialize(m.KPacket.BytesBuffer())
 
 	return m.KPacket.Serialize()
 }
 
 func (m *ProtocolLoginResponse) Deserialize(p IKPacket) (err error) {
 
-	buffer := p.Buff()
+	buffer := p.BytesBuffer()
 
 	len := binary.BigEndian.Uint16(buffer.Next(2))
 	m.SessionID = string(buffer.Next(int(len)))
@@ -185,7 +185,7 @@ func (m *ProtocolChattingRequest) Serialize() []byte {
 }
 
 func (m *ProtocolChattingRequest) Deserialize(p IKPacket) (err error) {
-	err = json.Unmarshal(p.Body(), m)
+	err = json.Unmarshal(p.BytesBuffer().Bytes(), m)
 	return
 }
 
@@ -204,7 +204,7 @@ func (m *ProtocolChattingResponse) Serialize() []byte {
 }
 
 func (m *ProtocolChattingResponse) Deserialize(p IKPacket) (err error) {
-	err = json.Unmarshal(p.Body(), m)
+	err = json.Unmarshal(p.BytesBuffer().Bytes(), m)
 	return
 }
 

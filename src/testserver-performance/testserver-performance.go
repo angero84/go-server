@@ -61,11 +61,11 @@ func main() {
 	}
 
 	connhOpt := &ktcp.KConnHandleOpt{
-		Handler:	khandler.NewKConnHandlerEchoServer(),
+		Handler:	khandler.NewKConnEventEchoServer(),
 		Protocol:	&kprotocol.KProtocol{},
 	}
 
-	connhOpt.Handler.(*khandler.KConnHandlerEchoServer).SetContainer(container)
+	connhOpt.Handler.(*khandler.KConnEventEchoServer).SetContainer(container)
 
 	acceptor, err := ktcp.NewKAcceptor(serverConfig.Port, &serverConfig.AcceptorOpt, connhOpt )
 	if nil != err {

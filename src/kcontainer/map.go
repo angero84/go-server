@@ -36,7 +36,7 @@ func (m *KMap) Destroy() {
 
 func (m *KMap) Map() *map[uint64]IKMap		{ return &m.objects }
 
-func (m *KMap) Clear(destroy bool) {
+func (m *KMap) RemoveAll(destroy bool) {
 
 	m.Lock()
 	defer m.Unlock()
@@ -50,7 +50,7 @@ func (m *KMap) Clear(destroy bool) {
 	m.objects = make(map[uint64]IKMap)
 }
 
-func (m *KMap) Add(object IKMap) (err error) {
+func (m *KMap) Insert(object IKMap) (err error) {
 
 	m.Lock()
 	defer m.Unlock()

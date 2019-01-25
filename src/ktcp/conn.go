@@ -196,7 +196,7 @@ func (m *KConn) disconnect () {
 
 	defer func() {
 		if rc := recover() ; nil != rc {
-			klog.MakeFatalFile("[id:%d] KConn.disconnect() recovered : %v", m.id, rc)
+			klog.MakeFatal("[id:%d] KConn.disconnect() recovered : %v", m.id, rc)
 		}
 	}()
 

@@ -20,7 +20,7 @@ type kLogFile struct {
 	curHour				int
 }
 
-func NewKLogFile(opt *KLogFileOpt) (logfile *kLogFile, err error) {
+func NewKLogFile(opt *KLogFileOpt) (object *kLogFile, err error) {
 
 	if nil == opt {
 		opt = &KLogFileOpt{}
@@ -32,14 +32,14 @@ func NewKLogFile(opt *KLogFileOpt) (logfile *kLogFile, err error) {
 		return
 	}
 
-	logfile = &kLogFile{
+	object = &kLogFile{
 		KObject:			kobject.NewKObject("kLogFile"),
 		shiftType:			opt.ShiftType,
 		rootDirectoryName:	opt.RootDirectoryName,
 		prefix:				opt.Prefix,
 	}
 
-	_, err = logfile.CheckFileShift()
+	_, err = object.CheckFileShift()
 	if nil != err {
 		return
 	}

@@ -7,24 +7,24 @@ import (
 	"fmt"
 )
 
-func NewProcessorExample() (handlers map[uint32]KConnHandlerFunc) {
+func NewMessageHandlerExample() (handlers map[uint32]KConnMessageHandler) {
 
-	handlers = make(map[uint32]KConnHandlerFunc)
+	handlers = make(map[uint32]KConnMessageHandler)
 
-	handlers[1001]		= OnProcessorLoginRequest
-	handlers[1002]		= OnProcessorLoginResponse
-	handlers[1003]		= OnProcessorChattingRequest
-	handlers[1004]		= OnProcessorChattingResponse
+	handlers[1001]		= OnMessageLoginRequest
+	handlers[1002]		= OnMessageLoginResponse
+	handlers[1003]		= OnMessageChattingRequest
+	handlers[1004]		= OnMessageChattingResponse
 
 	return
 }
 
-func OnProcessorLoginRequest(c *ktcp.KConn, p kprotocol.IKPacket) {
+func OnMessageLoginRequest(c *ktcp.KConn, p kprotocol.IKPacket) {
 
 	req := &kprotocol.ProtocolLoginRequest{}
 	err := req.Deserialize(p)
 	if nil != err {
-		klog.LogWarn("OnProcessorLoginRequest Deserialize err : %s", err.Error())
+		klog.LogWarn("OnMessageLoginRequest Deserialize err : %s", err.Error())
 		return
 	}
 
@@ -59,12 +59,12 @@ func OnProcessorLoginRequest(c *ktcp.KConn, p kprotocol.IKPacket) {
 	c.Send(res)
 }
 
-func OnProcessorLoginResponse(c *ktcp.KConn, p kprotocol.IKPacket) {
+func OnMessageLoginResponse(c *ktcp.KConn, p kprotocol.IKPacket) {
 
 	res := &kprotocol.ProtocolLoginResponse{}
 	err := res.Deserialize(p)
 	if nil != err {
-		klog.LogWarn("OnProcessorLoginResponse Deserialize err : %s", err.Error())
+		klog.LogWarn("OnMessageLoginResponse Deserialize err : %s", err.Error())
 		return
 	}
 
@@ -77,12 +77,12 @@ func OnProcessorLoginResponse(c *ktcp.KConn, p kprotocol.IKPacket) {
 
 }
 
-func OnProcessorChattingRequest(c *ktcp.KConn, p kprotocol.IKPacket) {
+func OnMessageChattingRequest(c *ktcp.KConn, p kprotocol.IKPacket) {
 
 	req := &kprotocol.ProtocolChattingRequest{}
 	err := req.Deserialize(p)
 	if nil != err {
-		klog.LogWarn("OnProcessorChattingRequest Deserialize err : %s", err.Error())
+		klog.LogWarn("OnMessageChattingRequest Deserialize err : %s", err.Error())
 		return
 	}
 
@@ -98,12 +98,12 @@ func OnProcessorChattingRequest(c *ktcp.KConn, p kprotocol.IKPacket) {
 	c.Send(res)
 }
 
-func OnProcessorChattingResponse(c *ktcp.KConn, p kprotocol.IKPacket) {
+func OnMessageChattingResponse(c *ktcp.KConn, p kprotocol.IKPacket) {
 
 	res := &kprotocol.ProtocolChattingResponse{}
 	err := res.Deserialize(p)
 	if nil != err {
-		klog.LogWarn("OnProcessorChattingResponse Deserialize err : %s", err.Error())
+		klog.LogWarn("OnMessageChattingResponse Deserialize err : %s", err.Error())
 		return
 	}
 

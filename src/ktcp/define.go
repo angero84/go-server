@@ -17,11 +17,8 @@ type KClientCallBack func(client *KClient, err error)
 
 type IKConnHandler interface {
 	OnConnected		(*KConn)
-
 	OnMessage		(*KConn, kprotocol.IKPacket)
-
 	OnDisconnected	(*KConn)
-
 	MessageCount	() uint64
 }
 

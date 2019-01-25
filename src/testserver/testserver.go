@@ -40,7 +40,7 @@ func main() {
 	}
 
 	connhOpt := &ktcp.KConnHandleOpt{
-		Handler:	khandler.NewKConnHandler(khandler.NewProcessorExample()),
+		Handler:	khandler.NewKConnEventExample(khandler.NewMessageHandlerExample()),
 		Protocol:	&kprotocol.KProtocol{},
 	}
 

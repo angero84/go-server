@@ -45,7 +45,7 @@ func main() {
 	connOpt.SetDefault()
 
 	connhOpt := &ktcp.KConnHandleOpt{
-		Handler:	khandler.NewKConnHandlerEchoClient(),
+		Handler:	khandler.NewKConnEventEchoClient(),
 		Protocol:	&kprotocol.KProtocol{},
 	}
 
@@ -73,7 +73,7 @@ func main() {
 			return
 		}
 
-		container.Add(robot)
+		container.Insert(robot)
 
 	}
 
