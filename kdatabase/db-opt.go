@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	klog "klogger"
+	klog "../klogger"
 )
 
 type KDBInfo struct {

@@ -1,12 +1,12 @@
 package robot
 
 import (
-	"kobject"
-	"ktcp"
+	"../kobject"
+	"../ktcp"
 	"errors"
 	"time"
-	klog "klogger"
-	"kprotocol"
+	klog "../klogger"
+	"../kprotocol"
 )
 
 type ClientRobotOpt struct {

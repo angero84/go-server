@@ -1,7 +1,7 @@
 package ktcp
 
 import (
-	"kprotocol"
+	"../kprotocol"
 	"time"
 )
 

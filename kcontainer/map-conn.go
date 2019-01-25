@@ -3,9 +3,9 @@ package kcontainer
 import (
 	"time"
 
-	"kprotocol"
-	"ktcp"
-	klog "klogger"
+	"../kprotocol"
+	"../ktcp"
+	klog "../klogger"
 )
 
 type KMapConn struct {

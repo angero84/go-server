@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"errors"
 
-	"kobject"
+	"../kobject"
 )
 
 type kLogFile struct {

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"kutil"
+	"../kutil"
 )
 
 type IKLogOpt interface {

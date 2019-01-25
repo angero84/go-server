@@ -1,10 +1,10 @@
 package khandler
 
 import (
-	"kprotocol"
-	"ktcp"
-	klog 		"klogger"
-	"kobject"
+	"../kprotocol"
+	"../ktcp"
+	klog 		"../klogger"
+	"../kobject"
 )
 
 type KConnEventExample struct{

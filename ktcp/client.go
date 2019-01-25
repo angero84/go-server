@@ -1,15 +1,15 @@
 package ktcp
 
 import (
-	"kprotocol"
+	"../kprotocol"
 	"net"
 	"fmt"
 	"sync"
-	"kobject"
+	"../kobject"
 	"errors"
 	"sync/atomic"
 
-	klog "klogger"
+	klog "../klogger"
 	"time"
 )
 

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"kdatabase"
-	klog "klogger"
+	"../kdatabase"
+	klog "../klogger"
 	"os"
 	"syscall"
 	"os/signal"
