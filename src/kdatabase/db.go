@@ -73,6 +73,25 @@ func (m *KDB) Close() (err error) {
 	return
 }
 
+func (m *KDB) Exec(query string, args ...interface{}) (result sql.Result, err error) {
+
+	timer := kutil.KTimer{}
+	if m.connOpt.ResponseTimeCheck {
+		timer.Reset()
+	}
+
+	result, err = m.db.Exec(query, args...)
+
+	if m.connOpt.ResponseTimeCheck {
+		elapsed := uint32(timer.ElapsedMilisec())
+		if elapsed > m.connOpt.ResponseTimeLimit {
+			klog.LogWarn("[database] Response time delayed, query:%s, time:%d", query, elapsed)
+		}
+	}
+
+	return
+}
+
 func (m *KDB) QueryRow(query string, args ...interface{}) (row *sql.Row) {
 
 	timer := kutil.KTimer{}
@@ -110,6 +129,9 @@ func (m *KDB) Query(query string, args ...interface{}) (rows *sql.Rows) {
 	}
 
 	if nil != err {
+		if nil != rows {
+			rows.Close()
+		}
 		rows = nil
 		klog.LogWarn("[database] Query error, query:%s, err:%s, args:%v", query, err.Error(), args)
 	}
