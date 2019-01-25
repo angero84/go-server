@@ -5,8 +5,8 @@ import (
 	"io"
 	"log"
 
-	"kutil"
-	"kobject"
+	"github.com/angero84/go-server/kutil"
+	"github.com/angero84/go-server/kobject"
 )
 
 type kLogger struct {

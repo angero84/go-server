@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"kobject"
+	"github.com/angero84/go-server/kobject"
 )
 
 type KMap struct {

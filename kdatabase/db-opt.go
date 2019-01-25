@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	klog "klogger"
+	klog "github.com/angero84/go-server/klogger"
 )
 
 type KDBInfo struct {

@@ -1,10 +1,10 @@
 package khandler
 
 import (
-	"kprotocol"
-	"ktcp"
-	klog 		"klogger"
-	"kobject"
+	"github.com/angero84/go-server/kprotocol"
+	"github.com/angero84/go-server/ktcp"
+	klog 		"github.com/angero84/go-server/klogger"
+	"github.com/angero84/go-server/kobject"
 )
 
 type KConnEventExample struct{

@@ -1,15 +1,15 @@
 package ktcp
 
 import (
-	"kprotocol"
+	"github.com/angero84/go-server/kprotocol"
 	"net"
 	"fmt"
 	"sync"
-	"kobject"
+	"github.com/angero84/go-server/kobject"
 	"errors"
 	"sync/atomic"
 
-	klog "klogger"
+	klog "github.com/angero84/go-server/klogger"
 	"time"
 )
 

@@ -3,9 +3,9 @@ package kcontainer
 import (
 	"time"
 
-	"kprotocol"
-	"ktcp"
-	klog "klogger"
+	"github.com/angero84/go-server/kprotocol"
+	"github.com/angero84/go-server/ktcp"
+	klog "github.com/angero84/go-server/klogger"
 )
 
 type KMapConn struct {

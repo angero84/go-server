@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"kobject"
+	"github.com/angero84/go-server/kobject"
 )
 
 var instanceKDefaultLogger *kDefaultLogger

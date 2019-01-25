@@ -1,7 +1,7 @@
 package ktcp
 
 import (
-	"kprotocol"
+	"github.com/angero84/go-server/kprotocol"
 	"time"
 )
 

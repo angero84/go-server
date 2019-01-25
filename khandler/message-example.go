@@ -1,9 +1,9 @@
 package khandler
 
 import (
-	"ktcp"
-	"kprotocol"
-	klog "klogger"
+	"github.com/angero84/go-server/ktcp"
+	"github.com/angero84/go-server/kprotocol"
+	klog "github.com/angero84/go-server/klogger"
 	"fmt"
 )
 

@@ -9,11 +9,11 @@ import (
 	"runtime"
 	"syscall"
 
-	"khandler"
-	klog "klogger"
-	"kprotocol"
-	"ktcp"
-	"kcontainer"
+	"github.com/angero84/go-server/khandler"
+	klog "github.com/angero84/go-server/klogger"
+	"github.com/angero84/go-server/kprotocol"
+	"github.com/angero84/go-server/ktcp"
+	"github.com/angero84/go-server/kcontainer"
 )
 
 type serverConfig struct {

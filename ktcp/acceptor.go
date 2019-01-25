@@ -8,9 +8,9 @@ import (
 	"sync/atomic"
 
 
-	"kobject"
-	klog 		"klogger"
-	"kutil"
+	"github.com/angero84/go-server/kobject"
+	klog 		"github.com/angero84/go-server/klogger"
+	"github.com/angero84/go-server/kutil"
 )
 
 type KAcceptor struct {

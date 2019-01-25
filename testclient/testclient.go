@@ -2,11 +2,11 @@ package main
 
 import (
 
-	klog "klogger"
+	klog "github.com/angero84/go-server/klogger"
 
-	"kprotocol"
-	"ktcp"
-	"khandler"
+	"github.com/angero84/go-server/kprotocol"
+	"github.com/angero84/go-server/ktcp"
+	"github.com/angero84/go-server/khandler"
 	"fmt"
 	"strings"
 )

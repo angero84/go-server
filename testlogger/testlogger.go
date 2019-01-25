@@ -1,8 +1,8 @@
 package main
 
 import (
-	"kutil"
-	"klogger"
+	"github.com/angero84/go-server/kutil"
+	"github.com/angero84/go-server/klogger"
 )
 
 func main() {

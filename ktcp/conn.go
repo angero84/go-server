@@ -6,10 +6,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"kprotocol"
-	"kutil"
-	"kobject"
-	klog 		"klogger"
+	"github.com/angero84/go-server/kprotocol"
+	"github.com/angero84/go-server/kutil"
+	"github.com/angero84/go-server/kobject"
+	klog 		"github.com/angero84/go-server/klogger"
 )
 
 type KConnErr struct {

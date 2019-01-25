@@ -1,7 +1,7 @@
 package main
 
 import (
-	"kobject"
+	"github.com/angero84/go-server/kobject"
 	"sync"
 	"fmt"
 	"runtime"

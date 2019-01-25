@@ -1,12 +1,12 @@
 package robot
 
 import (
-	"kobject"
-	"ktcp"
+	"github.com/angero84/go-server/kobject"
+	"github.com/angero84/go-server/ktcp"
 	"errors"
 	"time"
-	klog "klogger"
-	"kprotocol"
+	klog "github.com/angero84/go-server/klogger"
+	"github.com/angero84/go-server/kprotocol"
 )
 
 type ClientRobotOpt struct {

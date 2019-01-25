@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"errors"
 
-	"kobject"
+	"github.com/angero84/go-server/kobject"
 )
 
 type kLogFile struct {

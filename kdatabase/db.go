@@ -3,11 +3,11 @@ package kdatabase
 import (
 
 	"database/sql"
-	"kobject"
+	"github.com/angero84/go-server/kobject"
 	"errors"
 
-	klog "klogger"
-	"kutil"
+	klog "github.com/angero84/go-server/klogger"
+	"github.com/angero84/go-server/kutil"
 )
 
 type KDB struct {

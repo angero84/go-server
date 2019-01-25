@@ -1,8 +1,8 @@
 package main
 
 import (
-	"kdatabase"
-	klog "klogger"
+	"github.com/angero84/go-server/kdatabase"
+	klog "github.com/angero84/go-server/klogger"
 	"os"
 	"syscall"
 	"os/signal"

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"errors"
 
-	"kprotocol"
-	klog 		"klogger"
+	"github.com/angero84/go-server/kprotocol"
+	klog 		"github.com/angero84/go-server/klogger"
 )
 
 type KAcceptorOpt struct {
