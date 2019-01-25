@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"errors"
 
-	"../kprotocol"
-	klog 		"../klogger"
+	"kprotocol"
+	klog 		"klogger"
 )
 
 type KAcceptorOpt struct {

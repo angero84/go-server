@@ -2,11 +2,11 @@ package main
 
 import (
 
-	klog "../klogger"
+	klog "klogger"
 
-	"../kprotocol"
-	"../ktcp"
-	"../khandler"
+	"kprotocol"
+	"ktcp"
+	"khandler"
 	"fmt"
 	"strings"
 )

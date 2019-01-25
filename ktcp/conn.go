@@ -6,10 +6,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"../kprotocol"
-	"../kutil"
-	"../kobject"
-	klog 		"../klogger"
+	"kprotocol"
+	"kutil"
+	"kobject"
+	klog 		"klogger"
 )
 
 type KConnErr struct {

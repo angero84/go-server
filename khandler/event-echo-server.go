@@ -1,11 +1,11 @@
 package khandler
 
 import (
-	"../kprotocol"
-	"../ktcp"
-	klog "../klogger"
-	"../kobject"
-	"../kcontainer"
+	"kprotocol"
+	"ktcp"
+	klog "klogger"
+	"kobject"
+	"kcontainer"
 	"sync/atomic"
 )
 

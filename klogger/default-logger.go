@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"../kobject"
+	"kobject"
 )
 
 var instanceKDefaultLogger *kDefaultLogger

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"../kobject"
+	"kobject"
 	"sync"
 	"fmt"
 	"runtime"

@@ -9,11 +9,11 @@ import (
 	"runtime"
 	"syscall"
 
-	"../khandler"
-	klog "../klogger"
-	"../kprotocol"
-	"../ktcp"
-	"../kcontainer"
+	"khandler"
+	klog "klogger"
+	"kprotocol"
+	"ktcp"
+	"kcontainer"
 )
 
 type serverConfig struct {

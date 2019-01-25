@@ -3,11 +3,11 @@ package kdatabase
 import (
 
 	"database/sql"
-	"../kobject"
+	"kobject"
 	"errors"
 
-	klog "../klogger"
-	"../kutil"
+	klog "klogger"
+	"kutil"
 )
 
 type KDB struct {

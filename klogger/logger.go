@@ -5,8 +5,8 @@ import (
 	"io"
 	"log"
 
-	"../kutil"
-	"../kobject"
+	"kutil"
+	"kobject"
 )
 
 type kLogger struct {

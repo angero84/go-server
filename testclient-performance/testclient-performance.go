@@ -2,15 +2,15 @@ package main
 
 import (
 
-	klog "../klogger"
+	klog "klogger"
 
-	"../kprotocol"
-	"../ktcp"
-	"../khandler"
+	"kprotocol"
+	"ktcp"
+	"khandler"
 	"fmt"
 
-	"../kcontainer"
-	"../robot"
+	"kcontainer"
+	"robot"
 	"runtime"
 )
 

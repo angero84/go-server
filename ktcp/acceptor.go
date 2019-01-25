@@ -8,9 +8,9 @@ import (
 	"sync/atomic"
 
 
-	"../kobject"
-	klog 		"../klogger"
-	"../kutil"
+	"kobject"
+	klog 		"klogger"
+	"kutil"
 )
 
 type KAcceptor struct {

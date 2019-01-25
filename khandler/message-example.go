@@ -1,9 +1,9 @@
 package khandler
 
 import (
-	"../ktcp"
-	"../kprotocol"
-	klog "../klogger"
+	"ktcp"
+	"kprotocol"
+	klog "klogger"
 	"fmt"
 )
 

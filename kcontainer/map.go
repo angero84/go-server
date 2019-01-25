@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"../kobject"
+	"kobject"
 )
 
 type KMap struct {
