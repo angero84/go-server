@@ -37,7 +37,7 @@ func (m *kLogger) PrintfWithLogType(logType KLogType, format string, v ...interf
 
 	defer func() {
 		if rc := recover() ; nil != rc {
-			println(fmt.Sprintf("!!!---> kLogger.PrintfWithLogType() recovered : %v", rc))
+			MakeWarn("!!!---> kLogger.PrintfWithLogType() recovered : %v", rc)
 		}
 	}()
 

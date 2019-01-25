@@ -109,7 +109,7 @@ func (m *kLogFile) CheckFileShift() (file *os.File, err error) {
 	if nil != m.file {
 		fileErr := m.file.Close()
 		if nil != fileErr {
-			println("kLogFile.CheckFileShift() old file close error : ", fileErr.Error())
+			MakeWarn("kLogFile.CheckFileShift() old file close error : %s", fileErr.Error())
 		}
 	}
 

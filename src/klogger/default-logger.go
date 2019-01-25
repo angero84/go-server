@@ -175,6 +175,18 @@ func MakeFatal(format string, v ...interface{}) {
 	log.Fatalln(fmt.Sprintf(format, v...))
 }
 
+func MakeWarn(format string, v ...interface{}) {
+
+	file, err := os.OpenFile("warn.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if nil != err {
+		return
+	}
+	defer file.Close()
+	log.SetOutput(file)
+	log.Println(fmt.Sprintf(format, v...))
+	log.SetOutput(os.Stderr)
+}
+
 func Log(writerType KLogWriterType, logType KLogType, format string, args ...interface{}) {
 	if nil != instanceKDefaultLogger {
 		instanceKDefaultLogger.Log(writerType, logType, format, args...)

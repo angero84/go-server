@@ -39,10 +39,10 @@ type KConn struct {
 	packetChanReceive	chan kprotocol.IKPacket
 	remoteHostIP		string
 	remotePort			string
+	lifeTime			*kutil.KTimer
 
 	disconnectOnce		sync.Once
 	startOnce			sync.Once
-	lifeTime			*kutil.KTimer
 	disconnectFlag		int32
 }
 
@@ -97,7 +97,7 @@ func (m *KConn) Disconnect() {
 
 	m.disconnectOnce.Do(
 		func() {
-			klog.LogDebug("KConn.disconnect() called - id:%d", m.id)
+			klog.LogDebug("KConn.disconnect() called - id:%d", m.ID())
 			go m.disconnect()
 		})
 }
@@ -110,14 +110,14 @@ func (m *KConn) Send(p kprotocol.IKPacket) (err error)  {
 
 	if m.Disconnected() {
 		err = KConnErr{KConnErrType_Closed}
-		klog.LogDebug("[id:%d] KConn.Send() Disconnected", m.id)
+		klog.LogDebug("[id:%d] KConn.Send() Disconnected", m.ID())
 		return
 	}
 
 	defer func() {
 		if e := recover() ; e != nil {
 			err = KConnErr{KConnErrType_Closed}
-			klog.LogWarn("[id:%d] KConn.Send() recovered : %v", m.id, e)
+			klog.LogWarn("[id:%d] KConn.Send() recovered : %v", m.ID(), e)
 		}
 	}()
 
@@ -126,7 +126,7 @@ func (m *KConn) Send(p kprotocol.IKPacket) (err error)  {
 		return
 	default:
 		err = KConnErr{KConnErrType_WriteBlocked}
-		klog.LogFatal("[id:%d] KConn.Send() packet push blocked", m.id)
+		klog.LogFatal("[id:%d] KConn.Send() packet push blocked", m.ID())
 		m.Disconnect()
 		return
 	}
@@ -137,14 +137,14 @@ func (m *KConn) SendWithTimeout(p kprotocol.IKPacket, timeout time.Duration) (er
 
 	if m.Disconnected() {
 		err = KConnErr{KConnErrType_Closed}
-		klog.LogDebug("[id:%d] KConn.SendWithTimeout() Disconnected", m.id)
+		klog.LogDebug("[id:%d] KConn.SendWithTimeout() Disconnected", m.ID())
 		return
 	}
 
 	defer func() {
 		if e := recover() ; e != nil {
 			err = KConnErr{KConnErrType_Closed}
-			klog.LogWarn("[id:%d] KConn.SendWithTimeout() recovered : %v", m.id, e)
+			klog.LogWarn("[id:%d] KConn.SendWithTimeout() recovered : %v", m.ID(), e)
 		}
 	}()
 
@@ -154,7 +154,7 @@ func (m *KConn) SendWithTimeout(p kprotocol.IKPacket, timeout time.Duration) (er
 				return
 			default:
 				err = KConnErr{KConnErrType_WriteBlocked}
-				klog.LogFatal("[id:%d] KConn.SendWithTimeout() packet push blocked", m.id)
+				klog.LogFatal("[id:%d] KConn.SendWithTimeout() packet push blocked", m.ID())
 				m.Disconnect()
 				return
 		}
@@ -165,11 +165,11 @@ func (m *KConn) SendWithTimeout(p kprotocol.IKPacket, timeout time.Duration) (er
 				return
 			case <-m.DestroySignal():
 				err = KConnErr{KConnErrType_Closed}
-				klog.LogDetail("[id:%d] KConn.SendWithTimeout() Destroy sensed", m.id)
+				klog.LogDetail("[id:%d] KConn.SendWithTimeout() Destroy sensed", m.ID())
 				return
 			case <-time.After(timeout):
 				err = KConnErr{KConnErrType_WriteBlocked}
-				klog.LogFatal("[id:%d] KConn.SendWithTimeout() timeout", m.id)
+				klog.LogFatal("[id:%d] KConn.SendWithTimeout() timeout", m.ID())
 				m.Disconnect()
 				return
 		}
@@ -181,7 +181,7 @@ func (m *KConn) start() {
 
 	m.startOnce.Do(func() {
 
-		klog.LogDetail("[id:%d] KConn.Start()", m.id)
+		klog.LogDetail("[id:%d] KConn.Start()", m.ID())
 		if nil != m.handler {
 			m.handler.OnConnected(m)
 		}
@@ -196,14 +196,14 @@ func (m *KConn) disconnect () {
 
 	defer func() {
 		if rc := recover() ; nil != rc {
-			klog.MakeFatal("[id:%d] KConn.disconnect() recovered : %v", m.id, rc)
+			klog.MakeFatal("[id:%d] KConn.disconnect() recovered : %v", m.ID(), rc)
 		}
 	}()
 
 	atomic.StoreInt32(&m.disconnectFlag, 1)
 	m.KObject.Destroy()
 	m.rawConn.Close()
-	klog.LogDetail("[id:%d] KConn.disconnect() rawConn Closed", m.id)
+	klog.LogDetail("[id:%d] KConn.disconnect() rawConn Closed", m.ID())
 	if nil != m.handler {
 		m.handler.OnDisconnected(m)
 	}
@@ -213,9 +213,9 @@ func (m *KConn) disconnect () {
 func (m *KConn) reading() {
 
 	defer func() {
-		klog.LogDetail("[id:%d] KConn.reading() defered", m.id)
+		klog.LogDetail("[id:%d] KConn.reading() defered", m.ID())
 		if rc := recover() ; nil != rc {
-			klog.LogWarn("[id:%d] KConn.reading() recovered : %v", m.id, rc)
+			klog.LogWarn("[id:%d] KConn.reading() recovered : %v", m.ID(), rc)
 		}
 		m.Disconnect()
 	}()
@@ -224,7 +224,7 @@ func (m *KConn) reading() {
 
 		select {
 			case <-m.DestroySignal():
-				klog.LogDetail("[id:%d] KConn.reading() Destroy sensed", m.id)
+				klog.LogDetail("[id:%d] KConn.reading() Destroy sensed", m.ID())
 				return
 			default:
 				if nil == m.protocol {
@@ -232,7 +232,7 @@ func (m *KConn) reading() {
 				}
 				p, err := m.protocol.ReadKPacket(m.rawConn)
 				if err != nil {
-					klog.LogDebug("[id:%d] KConn.reading() ReadPacket err : %s", m.id, err.Error() )
+					klog.LogDebug("[id:%d] KConn.reading() ReadPacket err : %s", m.ID(), err.Error() )
 					return
 				}
 				m.packetChanReceive <- p
@@ -244,9 +244,9 @@ func (m *KConn) reading() {
 func (m *KConn) writing() {
 
 	defer func() {
-		klog.LogDetail("[id:%d] KConn.writing() defered", m.id)
+		klog.LogDetail("[id:%d] KConn.writing() defered", m.ID())
 		if rc := recover() ; nil != rc {
-			klog.LogWarn("[id:%d] KConn.writing() recovered : %v", m.id, rc)
+			klog.LogWarn("[id:%d] KConn.writing() recovered : %v", m.ID(), rc)
 		}
 		m.Disconnect()
 	}()
@@ -254,14 +254,14 @@ func (m *KConn) writing() {
 	for {
 		select {
 		case <-m.DestroySignal():
-			klog.LogDetail("[id:%d] KConn.writing() Destroy sensed", m.id)
+			klog.LogDetail("[id:%d] KConn.writing() Destroy sensed", m.ID())
 			return
 		case p := <-m.packetChanSend:
 			if m.Disconnected() {
 				return
 			}
 			if _, err := m.rawConn.Write(p.Serialize()) ; err != nil {
-				klog.LogDebug("[id:%d] KConn.writing() rawConn.Write err : %s", m.id, err.Error())
+				klog.LogDebug("[id:%d] KConn.writing() rawConn.Write err : %s", m.ID(), err.Error())
 				return
 			}
 		}
@@ -271,9 +271,9 @@ func (m *KConn) writing() {
 func (m *KConn) dispatching() {
 
 	defer func() {
-		klog.LogDetail("[id:%d] KConn.dispatching() defered", m.id)
+		klog.LogDetail("[id:%d] KConn.dispatching() defered", m.ID())
 		if rc := recover() ; nil != rc {
-			klog.LogWarn("[id:%d] KConn.dispatching() recovered : %v", m.id, rc)
+			klog.LogWarn("[id:%d] KConn.dispatching() recovered : %v", m.ID(), rc)
 		}
 		m.Disconnect()
 	}()
@@ -281,7 +281,7 @@ func (m *KConn) dispatching() {
 	for {
 		select {
 		case <-m.DestroySignal():
-			klog.LogDetail("[id:%d] KConn.dispatching() Destroy sensed", m.id)
+			klog.LogDetail("[id:%d] KConn.dispatching() Destroy sensed", m.ID())
 			return
 		case p := <-m.packetChanReceive:
 			if m.Disconnected() {
