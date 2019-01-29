@@ -139,52 +139,6 @@ func (m *KDB) Query(query string, args ...interface{}) (rows *sql.Rows) {
 	return
 }
 
-func (m *KDB) QueryResults(query string, args ...interface{}) (result *KDBResult) {
-
-	var rows *sql.Rows
-	rows = m.Query(query, args...)
-	if nil == rows {
-		return
-	}
-	defer rows.Close()
-
-	result = NewKDBResult()
-
-	for {
-		colnames, err := rows.Columns()
-		if nil != err {
-			result = nil
-			klog.LogWarn("[database] QueryResults rows.Columns error, query:%s, err:%s, args:%v", query, err.Error(), args)
-			break
-		}
-
-		set := NewKDBSet()
-		colcount	:= len(colnames)
-
-		for rows.Next() {
-			records 	:= make([]interface{},colcount)
-			for i := 0 ; i < colcount ; i++ {
-				records[i] = nil
-			}
-
-			err = rows.Scan(records...)
-			if nil != err {
-				result = nil
-				klog.LogWarn("[database] QueryResults rows.Scan error, query:%s, err:%s, args:%v", query, err.Error(), args)
-				return
-			}
-			set.rows = append(set.rows, records)
-		}
-
-		result.sets = append(result.sets, set)
-
-		if false == rows.NextResultSet() {
-			break
-		}
-	}
-
-	return
-}
 
 
 
