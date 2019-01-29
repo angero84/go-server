@@ -1,0 +1,4 @@
+package: github.com/angero84/go-server
+import:
+- package: github.com/go-sql-driver/mysql
+  version: ^1.4.1

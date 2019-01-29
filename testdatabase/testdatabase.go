@@ -28,10 +28,34 @@ func main() {
 		return
 	}
 
-	result := db.QueryResults("call usp_user_dispatch_info_select(?)", 1517 )
+	result := db.Query("call usp_user_dispatch_info_select(?)", 1564 )
 	if nil == result {
 		return
 	}
+	defer result.Close()
+
+	for result.Next() {
+
+		mileage := int(0)
+		err := result.Scan(&mileage)
+		if nil == err {
+			println(mileage)
+		}
+	}
+
+	if result.NextResultSet() {
+
+		for result.Next() {
+			country, state, remaintime := 0,0,0
+			err := result.Scan(&country, &state, &remaintime)
+			if nil == err {
+				println(country, " ", state, " ", remaintime)
+			}
+		}
+
+	}
+
+
 
 	chSig := make(chan os.Signal)
 

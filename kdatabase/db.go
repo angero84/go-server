@@ -8,6 +8,7 @@ import (
 
 	klog "github.com/angero84/go-server/klogger"
 	"github.com/angero84/go-server/kutil"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type KDB struct {
@@ -162,6 +163,10 @@ func (m *KDB) QueryResults(query string, args ...interface{}) (result *KDBResult
 
 		for rows.Next() {
 			records 	:= make([]interface{},colcount)
+			for i := 0 ; i < colcount ; i++ {
+				records[i] = nil
+			}
+
 			err = rows.Scan(records...)
 			if nil != err {
 				result = nil
