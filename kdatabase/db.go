@@ -9,6 +9,7 @@ import (
 	klog "github.com/angero84/go-server/klogger"
 	"github.com/angero84/go-server/kutil"
 	_ "github.com/go-sql-driver/mysql"
+	"time"
 )
 
 type KDB struct {
@@ -49,12 +50,23 @@ func NewKDB(info *KDBInfo, connOpt *KDBConnOpt) (object *KDB, err error){
 	db.SetMaxOpenConns(int(connOpt.MaxConnOpen))
 	db.SetMaxIdleConns(int(connOpt.MaxConnIdle))
 
+	err = db.Ping()
+	if nil != err {
+		db.Close()
+		return
+	}
+
+	klog.LogInfo("[database][driver:%v][host:%v][port:%v][db:%v][maxconn:%v][maxidle:%v] Database connection open succeed",
+		info.Driver, info.Host, info.Port, info.Database, connOpt.MaxConnOpen, connOpt.MaxConnIdle)
+
 	object = &KDB{
 		KObject:		kobject.NewKObject("KDB"),
 		db:				db,
 		info:			info.Clone(),
 		connOpt:		connOpt.Clone(),
 	}
+
+	go object.reporting()
 
 	return
 }
@@ -139,6 +151,36 @@ func (m *KDB) Query(query string, args ...interface{}) (rows *sql.Rows) {
 	return
 }
 
+
+func (m *KDB) reporting() {
+
+	defer func() {
+		if rc := recover() ; nil != rc {
+			klog.LogFatal("KDB.reporting() recovered : %v", rc)
+		}
+	}()
+
+	interval := time.Duration(m.connOpt.ReportingInterval)*time.Millisecond
+
+	if 0 >= interval {
+		return
+	}
+
+	timer := time.NewTimer(interval)
+
+	for {
+
+		select {
+		case <-m.DestroySignal():
+			klog.LogDetail("KDB.reporting() Destroy sensed")
+			return
+		case <-timer.C:
+			klog.LogInfo("[host:%s][db:%s][openconnection:%d]", m.info.Host, m.info.Database, m.db.Stats().OpenConnections)
+			timer.Reset(interval)
+		}
+
+	}
+}
 
 
 

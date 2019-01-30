@@ -27,6 +27,7 @@ type KClient struct {
 
 func NewKClient(id uint64, cliOpt *KClientOpt, connOpt *KConnOpt, connhOpt *KConnHandleOpt) (client *KClient, err error) {
 
+
 	err = cliOpt.Verify()
 	if nil != err {
 		return

@@ -17,16 +17,7 @@ type KConnErr struct {
 }
 
 func (m KConnErr) Error() string {
-	switch m.ErrCode {
-	case KConnErrType_Closed:
-		return "connection is closed"
-	case KConnErrType_WriteBlocked:
-		return "packet write channel is blocked"
-	case KConnErrType_ReadBlocked:
-		return "packet read channel is blocked"
-	default :
-		return "unknown"
-	}
+	return m.ErrCode.String()
 }
 
 type KConn struct {

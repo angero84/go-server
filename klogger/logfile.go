@@ -117,6 +117,8 @@ func (m *kLogFile) CheckFileShift() (file *os.File, err error) {
 	m.curDay	= day
 	m.curHour	= hour
 
+	println(fmt.Sprintf("[path:%v] logfile open succeed", fileFullPath))
+
 	return
 }
 

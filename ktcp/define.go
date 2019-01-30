@@ -28,3 +28,16 @@ const (
 	KConnErrType_WriteBlocked
 	KConnErrType_ReadBlocked
 )
+func (m KConnErrType) String() string {
+
+	switch m {
+	case KConnErrType_Closed:
+		return "KConnErrType_Closed"
+	case KConnErrType_WriteBlocked:
+		return "KConnErrType_WriteBlocked"
+	case KConnErrType_ReadBlocked:
+		return "KConnErrType_ReadBlocked"
+	default:
+		return "Unknown"
+	}
+}

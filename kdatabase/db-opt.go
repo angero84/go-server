@@ -104,7 +104,7 @@ func (m *KDBConnOpt) SetDefault() {
 
 	m.MaxConnOpen		= 0
 	m.MaxConnIdle		= 300
-	m.ReportingInterval = 2000
+	m.ReportingInterval = 10000
 	m.ResponseTimeCheck = true
 	m.ResponseTimeLimit = 100
 	klog.LogWarn("KDBConnOpt.SetDefault() Called")

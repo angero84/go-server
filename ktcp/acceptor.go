@@ -11,6 +11,7 @@ import (
 	"github.com/angero84/go-server/kobject"
 	klog 		"github.com/angero84/go-server/klogger"
 	"github.com/angero84/go-server/kutil"
+
 )
 
 type KAcceptor struct {
@@ -55,6 +56,8 @@ func NewKAcceptor(port uint16, accOpt *KAcceptorOpt, connhOpt *KConnHandleOpt ) 
 
 	go acceptor.reporting()
 
+	klog.LogInfo("[port:%v] Acceptor created", port)
+
 	return
 }
 
@@ -82,6 +85,8 @@ func (m *KAcceptor) Listen() (err error) {
 		}
 		tcpListener.Close()
 	}()
+
+	klog.LogInfo("[port:%v] Acceptor start listen", m.Port())
 
 	acceptTimeout := time.Duration(m.acceptorOpt.AcceptTimeout)*time.Millisecond
 

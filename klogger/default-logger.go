@@ -98,6 +98,9 @@ func NewKDefaultLogger(opt *KDefaultLoggerOpt) (object *kDefaultLogger, err erro
 		object.kLoggers[i] = klogger
 	}
 
+	println(fmt.Sprintf("---> [name:%v][rootdir:%v][logdepth:%v][usequeue:%v] KDefaultLogger initialized",
+		opt.LoggerName, opt.RootDirectoryName, opt.LogTypeDepth.String(), opt.UseQueue))
+
 	return
 }
 
