@@ -9,6 +9,9 @@ import (
 	"fmt"
 
 	"github.com/angero84/go-server/kobject"
+	"io/ioutil"
+	"time"
+	"strings"
 )
 
 var instanceKDefaultLogger *kDefaultLogger
@@ -26,6 +29,7 @@ func init() {
 				LoggerName:			"default",
 				RootDirectoryName:	"log",
 				UseQueue:			false,
+				StoringPeriodDay:	30,
 			})
 
 			if nil != err {
@@ -42,10 +46,11 @@ func init() {
 
 type kDefaultLogger struct {
 	*kobject.KObject
-	kLoggers		[]*kLogger
-	kLogFile		*kLogFile
-	kLogTypeDepth	KLogType
-	loggerName		string
+	kLoggers			[]*kLogger
+	kLogFile			*kLogFile
+	kLogTypeDepth		KLogType
+	loggerName			string
+	storingPeriodDay	uint32
 }
 
 func NewKDefaultLogger(opt *KDefaultLoggerOpt) (object *kDefaultLogger, err error) {
@@ -61,10 +66,11 @@ func NewKDefaultLogger(opt *KDefaultLoggerOpt) (object *kDefaultLogger, err erro
 	}
 
 	object = &kDefaultLogger{
-		KObject:		kobject.NewKObject("kDefaultLogger"),
-		kLoggers:		make([]*kLogger, KLogWriterType_Max),
-		kLogTypeDepth:	opt.LogTypeDepth,
-		loggerName:		opt.LoggerName,
+		KObject:			kobject.NewKObject("kDefaultLogger"),
+		kLoggers:			make([]*kLogger, KLogWriterType_Max),
+		kLogTypeDepth:		opt.LogTypeDepth,
+		loggerName:			opt.LoggerName,
+		storingPeriodDay:	opt.StoringPeriodDay,
 	}
 
 	var klogfile *kLogFile
@@ -100,6 +106,8 @@ func NewKDefaultLogger(opt *KDefaultLoggerOpt) (object *kDefaultLogger, err erro
 
 	println(fmt.Sprintf("---> [name:%v][rootdir:%v][logdepth:%v][usequeue:%v] KDefaultLogger initialized",
 		opt.LoggerName, opt.RootDirectoryName, opt.LogTypeDepth.String(), opt.UseQueue))
+
+	go object.fileManaging()
 
 	return
 }
@@ -155,6 +163,68 @@ func (m *kDefaultLogger) checkLogFile() {
 		}
 	} else if nil != err {
 		println(fmt.Sprintf("!!!---> kDefaultLogger.checkLogFile() err : %s", err.Error()))
+	}
+}
+
+func (m *kDefaultLogger) deleteOldFile() {
+
+	dirPath := m.kLogFile.ParentDirectoryPath()
+	files, err := ioutil.ReadDir(dirPath)
+	if nil != err {
+		m.Log(KLogWriterType_All, KLogType_Warn,"kDefaultLogger.deleteOldFile() ReadDir err : %v", err.Error())
+		return
+	}
+
+	fileCount := len(files)
+	if 0 >=  fileCount {
+		return
+	}
+
+	now := time.Now()
+	period := time.Hour * 24 * time.Duration(m.storingPeriodDay)
+
+	for _, r := range files {
+		modTime := r.ModTime()
+		fileName := r.Name()
+
+		if false == strings.Contains(fileName, m.loggerName) {
+			continue
+		}
+
+		if period < now.Sub(modTime) {
+			err := os.Remove(dirPath+"/"+fileName)
+			if nil != err {
+				m.Log(KLogWriterType_All, KLogType_Warn, "kDefaultLogger.deleteOldFile() File remove err : %v, fileName : %v, fileSize : %v", err.Error(), fileName, r.Size())
+			} else {
+				m.Log(KLogWriterType_All, KLogType_Info, "Deleted old log file, name : %v, modeTime : %v, size : %v", fileName, modTime, r.Size())
+			}
+		}
+	}
+
+}
+
+func (m *kDefaultLogger) fileManaging() {
+
+	defer func() {
+		if rc := recover() ; nil != rc {
+			MakeWarn("kDefaultLogger.managing() recovered : %v", rc)
+		}
+	}()
+
+	interval := time.Hour*1
+
+	timer := time.NewTimer(0)
+
+	for {
+
+		select {
+		case <-m.DestroySignal():
+			return
+		case <-timer.C:
+			m.deleteOldFile()
+			timer.Reset(interval)
+		}
+
 	}
 }
 

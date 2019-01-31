@@ -12,6 +12,7 @@ func main() {
 		RootDirectoryName: "log",
 		LogTypeDepth:      klogger.KLogType_Debug,
 		UseQueue:          false,
+		StoringPeriodDay:  30,
 	})
 
 	sync := make(chan int)

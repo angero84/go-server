@@ -86,12 +86,7 @@ func (m *kLogFile) CheckFileShift() (file *os.File, err error) {
 		}
 	}()
 
-	parentDir := ""
-	if 0 < len(m.rootDirectoryName) {
-		parentDir = m.rootDirectoryName + "/" + m.prefix
-	} else {
-		parentDir = m.prefix
-	}
+	parentDir := m.parentDirectoryPath()
 
 	err = m.makeDirectory(parentDir)
 	if nil != err {
@@ -122,6 +117,21 @@ func (m *kLogFile) CheckFileShift() (file *os.File, err error) {
 	return
 }
 
+func (m *kLogFile) ParentDirectoryPath() (path string) {
+
+	path = m.parentDirectoryPath()
+	return
+}
+
+func (m *kLogFile) parentDirectoryPath() (path string) {
+
+	if 0 < len(m.rootDirectoryName) {
+		path = m.rootDirectoryName + "/" + m.prefix
+	} else {
+		path = m.prefix
+	}
+	return
+}
 
 func (m *kLogFile) makeDirectory(dname string) (err error) {
 

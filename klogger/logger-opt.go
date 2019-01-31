@@ -70,6 +70,7 @@ type KDefaultLoggerOpt struct {
 	LoggerName 			string
 	RootDirectoryName	string
 	UseQueue			bool
+	StoringPeriodDay	uint32
 }
 
 func (m *KDefaultLoggerOpt) Clone() *KDefaultLoggerOpt {
@@ -79,6 +80,7 @@ func (m *KDefaultLoggerOpt) Clone() *KDefaultLoggerOpt {
 		LoggerName:			m.LoggerName,
 		RootDirectoryName:	m.RootDirectoryName,
 		UseQueue:			m.UseQueue,
+		StoringPeriodDay:	m.StoringPeriodDay,
 	}
 }
 
@@ -87,6 +89,7 @@ func (m *KDefaultLoggerOpt) SetDefault() {
 	m.LoggerName			= "default"
 	m.RootDirectoryName		= "log"
 	m.UseQueue				= false
+	m.StoringPeriodDay		= 30
 }
 
 func (m *KDefaultLoggerOpt) VerifyAndSetDefault() {
@@ -110,6 +113,11 @@ func (m *KDefaultLoggerOpt) Verify() ( err error ) {
 
 	if 0 > m.LogTypeDepth || KLogType_Max <= m.LogTypeDepth {
 		err = errors.New("KDefaultLoggerOpt.Verify() Undefined KLogType for LogTypeDepth")
+		return
+	}
+
+	if 1 > m.StoringPeriodDay {
+		err = errors.New(fmt.Sprintf("KDefaultLoggerOpt.Verify() StoringPeriodDay too short : %d", m.StoringPeriodDay))
 		return
 	}
 
