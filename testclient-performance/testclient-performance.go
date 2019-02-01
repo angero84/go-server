@@ -25,6 +25,7 @@ func main() {
 		LoggerName:			"perform",
 		RootDirectoryName:	"log",
 		UseQueue:			false,
+		StoringPeriodDay:	30,
 	})
 
 	if nil != err {
