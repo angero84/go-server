@@ -28,6 +28,7 @@ func NewKAcceptor(port uint16, accOpt *KAcceptorOpt, connhOpt *KConnHandleOpt ) 
 
 	if nil == accOpt {
 		accOpt = &KAcceptorOpt{}
+		
 		accOpt.SetDefault()
 	}
 
