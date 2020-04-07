@@ -30,6 +30,7 @@ func NewKAcceptor(port uint16, accOpt *KAcceptorOpt, connhOpt *KConnHandleOpt ) 
 		accOpt = &KAcceptorOpt{}
 		accOpt.SetDefault()
 		fmt.Sprintf("test")
+		var testNum int
 	}
 
 	if nil == connhOpt {
